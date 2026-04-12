@@ -106,12 +106,12 @@
         default_layer {
             bindings = <
 &escape_and_eisu  &kp Q         &kp W            &kp E         &kp R             &kp T                                                                  &kp Y                     &kp U  &kp I      &kp O    &kp P          &kp BACKSLASH
-&kp TAB           &kp A         &kp S            &kp D         &kp F             &kp G                           &mkp MCLK      &kp BACKSPACE           &kp H                     &kp J  &kp K      &kp L    &kp SEMICOLON  &kp COLON
+&kp TAB           &kp A         &kp S            &kp D         &kp F             &kp G                           &trans         &kp BACKSPACE           &kp H                     &kp J  &kp K      &kp L    &kp SEMICOLON  &kp COLON
 &kp LCTRL         &kp Z         &kp X            &kp C         &kp V             &kp B                           &kp AT_SIGN    &kp ENTER               &kp N                     &kp M  &kp COMMA  &kp DOT  &kp FSLH       &kp MINUS
 &kp LS(LCTRL)     &kp LEFT_ALT  &kp EXCLAMATION  &kp QUESTION  &kp LEFT_COMMAND  &HoldTap LEFT_SHIFT LANGUAGE_2  &kp SPACE      &cheat_layer_key 2 F20  &HoldMacroAndTap 1 LANG1                             &kp CARET      &kp TILDE
             >;
 
-            sensor-bindings = <&ROTATE SCRL_DOWN SCRL_UP>;
+            sensor-bindings = <&ROTATE SCRL_UP SCRL_DOWN>;
         };
 
         SignAndCalc {
@@ -121,6 +121,8 @@
 &kp LEFT_BRACKET      &kp RIGHT_BRACKET      &kp BACKSLASH  &kp AT_SIGN    &kp UNDERSCORE   &kp GRAVE          &trans    &kp NUMBER_0  &kp N1  &kp N2  &kp N3  &kp ASTERISK  &kp SLASH    &kp HASH
 &kp LESS_THAN         &kp GREATER_THAN       &trans         &trans         &trans           &trans             &trans    &trans        &trans                                &kp PERCENT  &trans
             >;
+
+            sensor-bindings = <&ROTATE SCRL_UP SCRL_DOWN>;
         };
 
         FUNCTION {
@@ -130,6 +132,8 @@
 &bt BT_SEL 1      &kp F13  &kp F10  &kp F3  &kp F2                &kp F1  &kp EQUAL                &kp LG(LS(ENTER))      &kp LS(LEFT_ARROW)  &kp LS(DOWN_ARROW)  &kp LS(UP_ARROW)  &kp LS(RIGHT_ARROW)  &trans  &trans
 &bt BT_SEL 0      &trans   &trans   &trans  &kp LS(LG(NUMBER_5))  &trans  &kp LS(LA(LC(LG(A))))    &trans                 &trans                                                                         &trans  &trans
             >;
+
+            sensor-bindings = <&ROTATE SCRL_LEFT SCRL_RIGHT>;
         };
 
         MOUSE {
@@ -139,6 +143,8 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans  &trans  &mkp LCLK  &mkp RCLK  &mkp MCLK  &mo 4
 &trans  &trans  &trans  &trans  &trans  &trans  &trans    &to 0   &to 0                                 &trans     &trans
             >;
+
+            sensor-bindings = <&ROTATE SCRL_UP SCRL_DOWN>;
         };
 
         SCROLL {
@@ -148,6 +154,8 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans  &trans  &mkp LCLK  &mkp RCLK  &mkp MCLK  &trans
 &trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans                                &trans     &trans
             >;
+
+            sensor-bindings = <&ROTATE SCRL_UP SCRL_DOWN>;
         };
     };
 };
