@@ -69,7 +69,8 @@
         };
 
         ROTATE: ROTATE {
-            compatible = "zmk,behavior-sensor-rotate-dir-lock";
+            compatible = "zmk,behavior-sensor-rotate-var";
+            label = "ROTATE";
             #sensor-binding-cells = <2>;
             bindings = <&msc>, <&msc>;
 
