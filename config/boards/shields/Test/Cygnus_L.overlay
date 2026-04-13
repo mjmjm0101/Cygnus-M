@@ -12,32 +12,6 @@
             ;
 };
 
-&sensors {
-    sensors = <&qdec0 &right_encoder>;
-};
-
-&pinctrl {
-    qdec_default: qdec_default {
-        group1 {
-            psels = <NRF_PSEL(QDEC_A, 0, 5)>,
-                    <NRF_PSEL(QDEC_B, 0, 2)>;
-        };
-    };
-
-    qdec_sleep: qdec_sleep {
-        group1 {
-            psels = <NRF_PSEL(QDEC_A, 0, 5)>,
-                    <NRF_PSEL(QDEC_B, 0, 2)>;
-            low-power-enable;
-        };
-    };
-};
-
-&qdec0 {
+&left_encoder {
     status = "okay";
-    steps = <24>;
-    led-pre = <0>;
-    pinctrl-0 = <&qdec_default>;
-    pinctrl-1 = <&qdec_sleep>;
-    pinctrl-names = "default", "sleep";
 };
