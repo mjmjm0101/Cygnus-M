@@ -1,6 +1,6 @@
 config ZMK_INPUT_PROCESSOR_SCROLL_DIR_LOCK
-    bool
-    default $(dt_compat_enabled,zmk,input-processor-scroll-direction-lock)
+    bool "Enable scroll direction lock input processor"
+    default n
 
 config ZMK_INPUT_PROCESSOR_SCROLL_DIR_LOCK_HOLD_TIME_MS
     int "Scroll direction lock hold time (ms)"
