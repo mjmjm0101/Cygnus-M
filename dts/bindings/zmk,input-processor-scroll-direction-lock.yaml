@@ -1,0 +1,10 @@
+description: Scroll direction lock input processor
+
+compatible: "zmk,input-processor-scroll-direction-lock"
+
+include: [base.yaml]
+
+properties:
+  "#input-processor-cells":
+    type: int
+    const: 0

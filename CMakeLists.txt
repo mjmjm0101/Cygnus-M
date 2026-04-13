@@ -1,0 +1,2 @@
+zephyr_library_sources_ifdef(CONFIG_ZMK_INPUT_PROCESSOR_SCROLL_DIR_LOCK
+    src/input_processor_scroll_direction_lock.c)
