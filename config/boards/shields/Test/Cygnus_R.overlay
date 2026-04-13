@@ -19,12 +19,6 @@
 };
 
 / {
-    scroll_dir_lock: scroll_dir_lock {
-        compatible = "zmk,input-processor-scroll-direction-lock";
-        #input-processor-cells = <0>;
-        status = "okay";
-    };
-
     zip_temp_layer_threshold: zip_temp_layer_threshold {
         compatible = "zmk,input-processor-temp-layer-threshold";
         #input-processor-cells = <2>;
@@ -47,7 +41,6 @@
                 &pointer_accel
                 &zip_xy_to_scroll_mapper
                 &zip_scroll_scaler 3 1
-                &scroll_dir_lock
             >;
         };
     };
