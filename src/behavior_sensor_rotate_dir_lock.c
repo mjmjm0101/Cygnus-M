@@ -75,8 +75,8 @@ static int sensor_rotate_dir_lock_accept_data(
             direction != data->last_direction[sensor_index] &&
             (now - data->last_event_time_ms[sensor_index]) <
                 CONFIG_ZMK_BEHAVIOR_SENSOR_ROTATE_DIR_LOCK_HOLD_TIME_MS) {
-            /* クールダウン中の逆方向入力を前方向に上書き */
-            triggers = data->last_direction[sensor_index] * (triggers < 0 ? -triggers : triggers);
+            /* クールダウン中の逆方向入力を破棄 */
+            triggers = 0;
         } else {
             data->last_direction[sensor_index] = direction;
         }
