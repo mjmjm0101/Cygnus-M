@@ -10,9 +10,9 @@
 &kscan0 {
         col-gpios
             = <&xiao_d 10 GPIO_ACTIVE_HIGH>
-            , <&xiao_d 9 GPIO_ACTIVE_HIGH> 
-            , <&xiao_d 8 GPIO_ACTIVE_HIGH> 
-            , <&xiao_d 7 GPIO_ACTIVE_HIGH> 
+            , <&xiao_d 9 GPIO_ACTIVE_HIGH>
+            , <&xiao_d 8 GPIO_ACTIVE_HIGH>
+            , <&xiao_d 7 GPIO_ACTIVE_HIGH>
             , <&gpio0 10 GPIO_ACTIVE_HIGH>
             , <&gpio1 10 GPIO_ACTIVE_HIGH>
             ;
@@ -26,12 +26,35 @@
         reset-timeout-ms = <200>;  /* 動きが止まったらカウントリセット */
     };
 
-    trackball_listener {
+    trackball_listener: trackball_listener {
         compatible = "zmk,input-listener";
         device = <&trackball>;
-        input-processors = <&pointer_accel &zip_temp_layer_threshold 3 700 &zip_scroll_scaler 3 1>;
+        input-processors = <
+            &pointer_accel
+            &zip_temp_layer_threshold 3 700
+        >;
+
+        scroller {
+            layers = <4>;
+            input-processors = <
+                &pointer_accel
+                &zip_xy_to_scroll_mapper
+                &zip_scroll_scaler 3 1
+            >;
+        };
     };
 };
+
+&pointer_accel {
+    input-type = <INPUT_EV_REL>;
+    min-factor = <200>;            /* 開始速度: 改造前の 1/5 */
+    max-factor = <800>;            /* 最大速度: 改造前の 4/5 */
+    speed-threshold = <500>;       /* 加速開始点 */
+    speed-max = <3000>;            /* この速度で最大に到達 */
+    acceleration-exponent = <2>;   /* 二次曲線 */
+};
+
+&xiao_serial { status = "disabled"; };
 
 &pinctrl {
     spi0_default: spi0_default {
@@ -52,17 +75,6 @@
     };
 };
 
-&pointer_accel {
-    input-type = <INPUT_EV_REL>;
-    min-factor = <200>;            /* 開始速度: 改造前の 1/5 */
-    max-factor = <800>;            /* 最大速度: 改造前の 4/5 */
-    speed-threshold = <500>;       /* 加速開始点 (低めにして微調整域を広く) */
-    speed-max = <3000>;            /* この速度で最大に到達 (控えめな速さで届く) */
-    acceleration-exponent = <2>;   /* 二次曲線: なだらかに加速、ピーキーにならない */
-};
-
-&xiao_serial { status = "disabled"; };
-
 &spi0 {
     status = "okay";
     compatible = "nordic,nrf-spim";
@@ -77,8 +89,5 @@
         reg = <0>;
         spi-max-frequency = <2000000>;
         irq-gpios = <&gpio0 2 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
-        scroll-layers = <4>;
     };
 };
-
-
