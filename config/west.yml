@@ -8,6 +8,10 @@ manifest:
       url-base: https://github.com/Dist16384
     - name: caksoylar  # <-- RGB LED
       url-base: https://github.com/caksoylar  
+    - name: pointing-acceleration
+      url-base: https://github.com/rain-bbb
+    - name: yamaryu211
+      url-base: https://github.com/yamaryu211
 
   projects:
     - name: zmk
@@ -22,6 +26,12 @@ manifest:
     - name: zmk-rgbled-widget
       remote: caksoylar
       revision: v0.3
+    - name: zmk-pointing-acceleration
+      remote: pointing-acceleration
+      revision: main
+    - name: zmk-input-processor-temp-layer-threshold
+      remote: yamaryu211
+      revision: main
 
   self:
     path: config

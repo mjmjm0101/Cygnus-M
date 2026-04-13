@@ -1,4 +1,5 @@
 #include "Cygnus.dtsi"
+#include <input/processors.dtsi>
 
 &default_transform {
     col-offset = <7>;
@@ -16,10 +17,17 @@
 };
 
 / {
+    zip_temp_layer_threshold: zip_temp_layer_threshold {
+        compatible = "zmk,input-processor-temp-layer-threshold";
+        #input-processor-cells = <2>;
+        threshold = <1200>;        /* 約2/5回転 (25mm球, 1000CPI) */
+        reset-timeout-ms = <200>;  /* 動きが止まったらカウントリセット */
+    };
+
     trackball_listener {
         compatible = "zmk,input-listener";
         device = <&trackball>;
-
+        input-processors = <&pointer_accel &zip_temp_layer_threshold 3 700 &zip_scroll_scaler 3 1>;
     };
 };
 
@@ -42,6 +50,14 @@
     };
 };
 
+&pointer_accel {
+    min-factor = <200>;            /* 開始速度: 改造前の 1/5 */
+    max-factor = <800>;            /* 最大速度: 改造前の 4/5 */
+    speed-threshold = <500>;       /* 加速開始点 (低めにして微調整域を広く) */
+    speed-max = <3000>;            /* この速度で最大に到達 (控えめな速さで届く) */
+    acceleration-exponent = <2>;   /* 二次曲線: なだらかに加速、ピーキーにならない */
+};
+
 &xiao_serial { status = "disabled"; };
 
 &spi0 {
@@ -58,8 +74,7 @@
         reg = <0>;
         spi-max-frequency = <2000000>;
         irq-gpios = <&gpio0 2 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
-        automouse-layer = <4>;
-        scroll-layers = <5>;
+        scroll-layers = <4>;
     };
 };
 
