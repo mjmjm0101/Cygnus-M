@@ -1,6 +1,7 @@
 #include "Cygnus.dtsi"
 #include <input/processors.dtsi>
 #include <behaviors/input_gestures_accel.dtsi>
+#include <dt-bindings/input/input-event-codes.h>
 
 &default_transform {
     col-offset = <7>;
@@ -52,6 +53,7 @@
 };
 
 &pointer_accel {
+    input-type = <INPUT_EV_REL>;
     min-factor = <200>;            /* 開始速度: 改造前の 1/5 */
     max-factor = <800>;            /* 最大速度: 改造前の 4/5 */
     speed-threshold = <500>;       /* 加速開始点 (低めにして微調整域を広く) */
