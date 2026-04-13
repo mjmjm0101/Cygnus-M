@@ -110,7 +110,7 @@
 &kp LS(LCTRL)     &kp LEFT_ALT  &kp EXCLAMATION  &kp QUESTION  &kp LEFT_COMMAND  &HoldTap LEFT_SHIFT LANGUAGE_2  &kp SPACE      &cheat_layer_key 2 F20  &HoldMacroAndTap 1 LANG1                             &kp CARET      &kp TILDE
             >;
 
-            sensor-bindings = <&ROTATE SCRL_UP SCRL_DOWN>;
+            sensor-bindings = <&ROTATE SCRL_DOWN SCRL_UP>;
         };
 
         SignAndCalc {
@@ -121,7 +121,7 @@
 &kp LESS_THAN         &kp GREATER_THAN       &trans         &trans         &trans           &trans             &trans    &trans        &trans                                &kp PERCENT  &trans
             >;
 
-            sensor-bindings = <&ROTATE SCRL_UP SCRL_DOWN>;
+            sensor-bindings = <&ROTATE SCRL_DOWN SCRL_UP>;
         };
 
         FUNCTION {
@@ -143,7 +143,7 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans    &to 0   &to 0                                 &trans     &trans
             >;
 
-            sensor-bindings = <&ROTATE SCRL_UP SCRL_DOWN>;
+            sensor-bindings = <&ROTATE SCRL_DOWN SCRL_UP>;
         };
 
         SCROLL {
@@ -154,7 +154,7 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans                                &trans     &trans
             >;
 
-            sensor-bindings = <&ROTATE SCRL_UP SCRL_DOWN>;
+            sensor-bindings = <&ROTATE SCRL_DOWN SCRL_UP>;
         };
     };
 };
