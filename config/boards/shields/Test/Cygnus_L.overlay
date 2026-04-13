@@ -12,12 +12,8 @@
             ;
 };
 
-/ {
-    sensors: sensors {
-        compatible = "zmk,keymap-sensors";
-        sensors = <&qdec0 &right_encoder>;
-        triggers-per-rotation = <24>;
-    };
+&sensors {
+    sensors = <&qdec0 &right_encoder>;
 };
 
 &pinctrl {
