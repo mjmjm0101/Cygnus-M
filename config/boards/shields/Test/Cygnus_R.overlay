@@ -32,7 +32,7 @@
         input-processors = <
             &pointer_accel
             &zip_y_scaler 21 20
-            &zip_temp_layer_threshold 3 700
+            &zip_temp_layer_threshold 3 10000
         >;
 
         scroller {
