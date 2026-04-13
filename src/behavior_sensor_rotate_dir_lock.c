@@ -32,8 +32,6 @@ struct behavior_sensor_rotate_dir_lock_data {
     int triggers[ZMK_KEYMAP_SENSORS_LEN][ZMK_KEYMAP_LAYERS_LEN];
     int8_t last_direction[ZMK_KEYMAP_SENSORS_LEN];    /* 1=CW, -1=CCW, 0=unknown */
     int64_t last_event_time_ms[ZMK_KEYMAP_SENSORS_LEN];
-    int8_t pending_direction[ZMK_KEYMAP_SENSORS_LEN]; /* 連続カウント中の逆方向 */
-    uint8_t pending_count[ZMK_KEYMAP_SENSORS_LEN];    /* 連続カウント数 */
 };
 
 static int sensor_rotate_dir_lock_accept_data(
@@ -77,25 +75,10 @@ static int sensor_rotate_dir_lock_accept_data(
             direction != data->last_direction[sensor_index] &&
             (now - data->last_event_time_ms[sensor_index]) <
                 CONFIG_ZMK_BEHAVIOR_SENSOR_ROTATE_DIR_LOCK_HOLD_TIME_MS) {
-            /* クールダウン中: 逆方向の連続カウントを確認 */
-            if (data->pending_direction[sensor_index] == direction) {
-                data->pending_count[sensor_index]++;
-            } else {
-                data->pending_direction[sensor_index] = direction;
-                data->pending_count[sensor_index] = 1;
-            }
-            if (data->pending_count[sensor_index] >= 2) {
-                /* 2回連続で逆方向 → 方向変更を受け入れ */
-                data->last_direction[sensor_index] = direction;
-                data->pending_count[sensor_index] = 0;
-            } else {
-                /* まだ1回だけ → 破棄 */
-                triggers = 0;
-            }
+            /* クールダウン中の逆方向入力を破棄 */
+            triggers = 0;
         } else {
             data->last_direction[sensor_index] = direction;
-            data->pending_direction[sensor_index] = 0;
-            data->pending_count[sensor_index] = 0;
         }
 
         data->last_event_time_ms[sensor_index] = now;
