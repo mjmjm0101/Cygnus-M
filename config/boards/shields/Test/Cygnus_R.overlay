@@ -40,7 +40,7 @@
             input-processors = <
                 &pointer_accel
                 &zip_xy_to_scroll_mapper
-                &zip_scroll_scaler 1 10
+                &zip_scroll_scaler 1 150
             >;
         };
     };
