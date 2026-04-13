@@ -22,7 +22,7 @@
     zip_temp_layer_threshold: zip_temp_layer_threshold {
         compatible = "zmk,input-processor-temp-layer-threshold";
         #input-processor-cells = <2>;
-        threshold = <1200>;        /* 約2/5回転 (25mm球, 1000CPI) */
+        threshold = <600>;         /* 約1/5回転 (25mm球, 1000CPI) */
         reset-timeout-ms = <200>;  /* 動きが止まったらカウントリセット */
     };
 
@@ -40,7 +40,7 @@
             input-processors = <
                 &pointer_accel
                 &zip_xy_to_scroll_mapper
-                &zip_scroll_scaler 3 1
+                &zip_scroll_scaler 1 10
             >;
         };
     };
