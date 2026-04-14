@@ -40,7 +40,7 @@
             input-processors = <
                 &pointer_accel
                 &zip_xy_to_scroll_mapper
-                &zip_scroll_scaler 4 300
+                &zip_scroll_scaler 4 450
             >;
         };
     };
@@ -48,9 +48,9 @@
 
 &pointer_accel {
     input-type = <INPUT_EV_REL>;
-    min-factor = <200>;            /* 開始速度: 改造前の 1/5 */
+    min-factor = <133>;            /* 開始速度: 改造前の 1/5 */
     max-factor = <800>;            /* 最大速度: 改造前の 4/5 */
-    speed-threshold = <500>;       /* 加速開始点 */
+    speed-threshold = <333>;       /* 加速開始点 */
     speed-max = <3000>;            /* この速度で最大に到達 */
     acceleration-exponent = <2>;   /* 二次曲線 */
 };
