@@ -56,6 +56,26 @@
 
             label = "CHEAT_LAYER_KEY";
         };
+
+        scroll_up_fast: scroll_up_fast {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <
+                &msc SCRL_UP
+                &msc SCRL_UP
+                &msc SCRL_UP
+            >;
+        };
+
+        scroll_down_fast: scroll_down_fast {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <
+                &msc SCRL_DOWN
+                &msc SCRL_DOWN
+                &msc SCRL_DOWN
+            >;
+        };
     };
 
     behaviors {
@@ -74,6 +94,13 @@
             #sensor-binding-cells = <2>;
             bindings = <&msc>, <&msc>;
 
+            tap-ms = <20>;
+        };
+
+        ROTATE_FAST: ROTATE_FAST {
+            compatible = "zmk,behavior-sensor-rotate";
+            #sensor-binding-cells = <0>;
+            bindings = <&scroll_up_fast>, <&scroll_down_fast>;
             tap-ms = <20>;
         };
 
@@ -110,7 +137,7 @@
 &kp LS(LCTRL)     &kp LEFT_ALT  &kp EXCLAMATION  &kp QUESTION  &kp LEFT_COMMAND  &HoldTap LEFT_SHIFT LANGUAGE_2  &kp SPACE      &cheat_layer_key 2 F20  &HoldMacroAndTap 1 LANG1                             &kp CARET      &kp TILDE
             >;
 
-            sensor-bindings = <&ROTATE SCRL_DOWN SCRL_UP>;
+            sensor-bindings = <&ROTATE_FAST>;
         };
 
         SignAndCalc {
@@ -121,7 +148,7 @@
 &kp LESS_THAN         &kp GREATER_THAN       &trans         &trans         &trans           &trans             &trans    &trans        &trans                                &kp PERCENT  &trans
             >;
 
-            sensor-bindings = <&ROTATE SCRL_DOWN SCRL_UP>;
+            sensor-bindings = <&ROTATE_FAST>;
         };
 
         FUNCTION {
@@ -132,7 +159,7 @@
 &bt BT_SEL 0      &trans   &trans   &trans  &kp LS(LG(NUMBER_5))  &trans  &kp LS(LA(LC(LG(A))))    &trans                 &trans                                                                         &trans  &trans
             >;
 
-            sensor-bindings = <&ROTATE SCRL_LEFT SCRL_RIGHT>;
+            sensor-bindings = <&ROTATE_FAST>;
         };
 
         MOUSE {
@@ -143,7 +170,7 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans    &to 0   &to 0                                 &trans     &trans
             >;
 
-            sensor-bindings = <&ROTATE SCRL_DOWN SCRL_UP>;
+            sensor-bindings = <&ROTATE_FAST>;
         };
 
         SCROLL {
@@ -154,7 +181,7 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans                                &trans     &trans
             >;
 
-            sensor-bindings = <&ROTATE SCRL_DOWN SCRL_UP>;
+            sensor-bindings = <&ROTATE_FAST>;
         };
     };
 };
