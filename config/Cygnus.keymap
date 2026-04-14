@@ -60,21 +60,13 @@
         scroll_up_fast: scroll_up_fast {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <
-                &msc SCRL_UP
-                &msc SCRL_UP
-                &msc SCRL_UP
-            >;
+            bindings = <&msc SCRL_UP &msc SCRL_UP &msc SCRL_UP>;
         };
 
         scroll_down_fast: scroll_down_fast {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <
-                &msc SCRL_DOWN
-                &msc SCRL_DOWN
-                &msc SCRL_DOWN
-            >;
+            bindings = <&msc SCRL_DOWN &msc SCRL_DOWN &msc SCRL_DOWN>;
         };
     };
 
@@ -101,6 +93,7 @@
             compatible = "zmk,behavior-sensor-rotate";
             #sensor-binding-cells = <0>;
             bindings = <&scroll_up_fast>, <&scroll_down_fast>;
+
             tap-ms = <20>;
         };
 
@@ -164,10 +157,10 @@
 
         MOUSE {
             bindings = <
-&trans  &trans  &trans  &trans  &trans  &trans                    &trans  &trans  &trans     &trans     &trans     &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans  &trans  &mo 4      &mo 4      &mo 4      &mo 4
-&trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans  &trans  &mkp LCLK  &mkp RCLK  &mkp MCLK  &mo 4
-&trans  &trans  &trans  &trans  &trans  &trans  &trans    &to 0   &to 0                                 &trans     &trans
+&trans  &trans  &trans  &trans  &trans  &trans                    &trans  &trans     &trans     &trans     &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans  &mkp LCLK  &mkp RCLK  &mkp MCLK  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans  &mo 4      &mo 4      &trans     &trans  &trans
+&trans  &trans  &trans  &trans  &to 0   &to 0   &to 0     &to 0   &to 0                                    &trans  &trans
             >;
 
             sensor-bindings = <&ROTATE_FAST>;
