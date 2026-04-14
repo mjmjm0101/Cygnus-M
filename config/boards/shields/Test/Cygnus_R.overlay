@@ -39,7 +39,7 @@
             layers = <4>;
             input-processors = <
                 &pointer_accel
-                &zip_y_scaler -1 1
+                &zip_y_scaler (-1) 1
                 &zip_xy_to_scroll_mapper
                 &zip_scroll_scaler 4 450
             >;
