@@ -97,6 +97,13 @@
             tap-ms = <20>;
         };
 
+        ROTATE_FAST_INV: ROTATE_FAST_INV {
+            compatible = "zmk,behavior-sensor-rotate";
+            #sensor-binding-cells = <0>;
+            bindings = <&scroll_down_fast>, <&scroll_up_fast>;
+            tap-ms = <20>;
+        };
+
         HoldMacroAndTap: HoldMacroAndTap {
             compatible = "zmk,behavior-hold-tap";
             label = "HOLDMACROANDTAP";
@@ -174,7 +181,7 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans                                &trans     &trans
             >;
 
-            sensor-bindings = <&ROTATE_FAST>;
+            sensor-bindings = <&ROTATE_FAST_INV>;
         };
     };
 };
