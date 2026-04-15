@@ -53,7 +53,7 @@
     max-factor = <800>;            /* 最大速度: 改造前の 4/5 */
     speed-threshold = <333>;       /* 加速開始点 */
     speed-max = <3000>;            /* この速度で最大に到達 */
-    acceleration-exponent = <2>;   /* 二次曲線 */
+    acceleration-exponent = <1>;   /* 線形 */
 };
 
 &xiao_serial { status = "disabled"; };
