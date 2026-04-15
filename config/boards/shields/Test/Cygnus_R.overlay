@@ -49,8 +49,8 @@
 
 &pointer_accel {
     input-type = <INPUT_EV_REL>;
-    min-factor = <133>;            /* 開始速度: 改造前の 1/5 */
-    max-factor = <800>;            /* 最大速度: 改造前の 4/5 */
+    min-factor = <80>;             /* 開始速度: 低速をさらに抑える */
+    max-factor = <500>;            /* 最大速度: 加速の勢いを緩める */
     speed-threshold = <333>;       /* 加速開始点 */
     speed-max = <3000>;            /* この速度で最大に到達 */
     acceleration-exponent = <1>;   /* 線形 */
