@@ -18,7 +18,7 @@
 #include <zephyr/device.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <dt-bindings/input/input-event-codes.h>
+#include <zephyr/input/input.h>
 
 #include <drivers/input_processor.h>
 #include <zmk/hid.h>
