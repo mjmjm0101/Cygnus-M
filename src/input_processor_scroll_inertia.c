@@ -132,14 +132,16 @@ static void inertia_tick_handler(struct k_work *work) {
         return;
     }
 
-    /* ── Layer gate ── */
+    /* ── Layer gate (only for RUNNING inertia) ── */
     if (cfg->layer >= 0 && !zmk_keymap_layer_active(cfg->layer)) {
+        LOG_DBG("Inertia cancelled: layer %d inactive", cfg->layer);
         cancel_inertia(data);
         return;
     }
 
     /* ── Duration gate ── */
     if (k_uptime_get() - data->inertia_start_time > cfg->span_ms) {
+        LOG_DBG("Inertia cancelled: max duration reached");
         cancel_inertia(data);
         return;
     }
@@ -160,6 +162,7 @@ static void inertia_tick_handler(struct k_work *work) {
     bool below_y = (cfg->axis == AXIS_X) || abs32(data->vel_y) < cfg->stop_fp;
     bool below_x = (cfg->axis == AXIS_Y) || abs32(data->vel_x) < cfg->stop_fp;
     if (below_y && below_x) {
+        LOG_DBG("Inertia cancelled: velocity below stop threshold");
         cancel_inertia(data);
         return;
     }
@@ -179,9 +182,11 @@ static void inertia_tick_handler(struct k_work *work) {
     }
 
     if (emit_x != 0 || emit_y != 0) {
+        zmk_hid_mouse_movement_set(0, 0);
         zmk_hid_mouse_scroll_set(emit_x, emit_y);
         zmk_endpoints_send_mouse_report();
         zmk_hid_mouse_scroll_set(0, 0);
+        LOG_DBG("Inertia emit  x=%d y=%d", emit_x, emit_y);
     }
 
     /* ── Next tick ── */
@@ -210,20 +215,23 @@ static void stop_detect_handler(struct k_work *work) {
     int32_t saved_movement = data->total_movement;
     data->total_movement = 0;
 
+    LOG_DBG("Stop detect: vel_y=%d vel_x=%d start_fp=%d movement=%d move=%d",
+            data->vel_y, data->vel_x, cfg->start_fp, saved_movement, cfg->move);
+
     if (!vel_ok || !mov_ok) {
-        LOG_DBG("Inertia skipped: vel_ok=%d mov_ok=%d (movement=%d)",
-                vel_ok, mov_ok, saved_movement);
+        LOG_DBG("Inertia skipped: vel_ok=%d mov_ok=%d",
+                vel_ok, mov_ok);
         data->vel_x = 0;
         data->vel_y = 0;
         return;
     }
 
-    /* ── Gate 3: layer ── */
-    if (cfg->layer >= 0 && !zmk_keymap_layer_active(cfg->layer)) {
-        data->vel_x = 0;
-        data->vel_y = 0;
-        return;
-    }
+    /*
+     * No layer check here: the velocity data was collected while
+     * the scroll layer was active.  The user may have released the
+     * layer key between the last event and this handler firing.
+     * Layer exit is enforced in the tick handler instead.
+     */
 
     /* ── Start inertia ── */
     data->inertia_active = true;
@@ -289,6 +297,10 @@ static int scroll_inertia_handle_event(const struct device *dev,
             data->vel_x = clamp_velocity(data->vel_x, cfg->limit_fp);
             data->total_movement += abs32(event->value);
         }
+
+        LOG_DBG("Input: code=0x%02x val=%d vel_y=%d vel_x=%d mov=%d",
+                event->code, event->value, data->vel_y, data->vel_x,
+                data->total_movement);
     }
 
     /* Always reset stop detection — the ball is still in motion
