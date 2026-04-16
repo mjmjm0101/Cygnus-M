@@ -80,8 +80,14 @@ properties:
     type: int
     default: 1000
     description: |
-      Velocity-to-scroll multiplier (permille).
-      1000 = 1:1 mapping from velocity to scroll output per tick.
+      Output scale numerator.
+      Inertia scroll output = velocity × scale / scale-div per tick.
+      When placed before a scaler, match that scaler's ratio.
+  scale-div:
+    type: int
+    default: 1000
+    description: |
+      Output scale denominator.
   limit:
     type: int
     default: 20

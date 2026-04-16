@@ -34,20 +34,21 @@
         gain     = <300>;         /* α≈0.3: 新入力の反映度 */
         blend    = <700>;         /* 直前速度の維持度 */
 
-        /* 慣性開始条件 */
-        start    = <3>;           /* 速度閾値 (scroll_scaler後の単位) */
-        move     = <15>;          /* 累積移動量閾値 */
+        /* 慣性開始条件 (scroll_scaler前のフルスケール値域) */
+        start    = <80>;          /* 速度閾値 (加速後の生値) */
+        move     = <200>;         /* 累積移動量閾値 */
         release  = <24>;          /* 離し判定 (ms, 125Hz×3フレーム) */
 
         /* 2段階減衰 */
-        fast     = <5>;           /* 高速/低速の境界 */
+        fast     = <150>;         /* 高速/低速の境界 */
         decay-fast = <960>;       /* 高速域: なめらかに伸びる */
         decay-slow = <870>;       /* 低速域: ピタッと止まる */
-        stop     = <1>;           /* これ以下で即停止 */
+        stop     = <10>;          /* これ以下で即停止 */
 
-        /* 出力制御 */
-        scale    = <1000>;        /* 1:1マッピング */
-        limit    = <15>;          /* scroll_scaler後の上限 */
+        /* 出力制御 (scroll_scalerと同じ比率を適用) */
+        scale    = <4>;           /* scroll_scaler numerator */
+        scale-div = <450>;        /* scroll_scaler denominator */
+        limit    = <600>;         /* 加速後の最大速度上限 */
         span     = <600>;         /* 最大持続 (ms) */
         tick     = <8>;           /* 更新周期 (ms, 125Hzに合わせる) */
 
@@ -72,8 +73,8 @@
                 &pointer_accel
                 &zip_y_scaler (-1) 1
                 &zip_xy_to_scroll_mapper
-                &zip_scroll_scaler 4 450
                 &scroll_inertia
+                &zip_scroll_scaler 4 450
             >;
         };
     };

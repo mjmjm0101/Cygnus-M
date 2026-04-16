@@ -57,7 +57,8 @@ struct scroll_inertia_config {
     int32_t stop_fp;       /* stop threshold (fixed-point) */
 
     /* Output */
-    int32_t scale;         /* velocity → scroll (permille) */
+    int32_t scale;         /* output scale numerator */
+    int32_t scale_div;     /* output scale denominator */
     int32_t limit_fp;      /* max velocity (fixed-point) */
     int32_t span_ms;       /* max duration */
     int32_t tick_ms;       /* update interval */
@@ -167,12 +168,12 @@ static void inertia_tick_handler(struct k_work *work) {
     int16_t emit_x = 0, emit_y = 0;
 
     if (cfg->axis != AXIS_X) {
-        data->accum_y += (int64_t)data->vel_y * cfg->scale / 1000;
+        data->accum_y += (int64_t)data->vel_y * cfg->scale / cfg->scale_div;
         emit_y = (int16_t)(data->accum_y >> FP_SHIFT);
         data->accum_y -= (int32_t)emit_y << FP_SHIFT;
     }
     if (cfg->axis != AXIS_Y) {
-        data->accum_x += (int64_t)data->vel_x * cfg->scale / 1000;
+        data->accum_x += (int64_t)data->vel_x * cfg->scale / cfg->scale_div;
         emit_x = (int16_t)(data->accum_x >> FP_SHIFT);
         data->accum_x -= (int32_t)emit_x << FP_SHIFT;
     }
@@ -328,6 +329,7 @@ static struct zmk_input_processor_driver_api scroll_inertia_driver_api = {
         .decay_slow = DT_INST_PROP(n, decay_slow),                            \
         .stop_fp    = DT_INST_PROP(n, stop) << FP_SHIFT,                      \
         .scale      = DT_INST_PROP(n, scale),                                 \
+        .scale_div  = DT_INST_PROP(n, scale_div),                             \
         .limit_fp   = DT_INST_PROP(n, limit) << FP_SHIFT,                    \
         .span_ms    = DT_INST_PROP(n, span),                                  \
         .tick_ms    = DT_INST_PROP(n, tick),                                   \
