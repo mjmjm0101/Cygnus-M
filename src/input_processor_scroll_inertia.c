@@ -251,49 +251,50 @@ static int scroll_inertia_handle_event(const struct device *dev,
         return ZMK_INPUT_PROC_CONTINUE;
     }
 
-    bool updated = false;
+    /* Identify whether this event is on a tracked axis */
+    bool is_y = (event->code == INPUT_REL_WHEEL  && cfg->axis != AXIS_X);
+    bool is_x = (event->code == INPUT_REL_HWHEEL && cfg->axis != AXIS_Y);
 
-    if (event->code == INPUT_REL_WHEEL && cfg->axis != AXIS_X) {
-        int32_t delta_fp = (int32_t)event->value << FP_SHIFT;
-        data->vel_y = ((int64_t)delta_fp * cfg->gain +
-                       (int64_t)data->vel_y * cfg->blend) / 1000;
-        data->vel_y = clamp_velocity(data->vel_y, cfg->limit_fp);
-        data->total_movement += abs32(event->value);
-        updated = true;
-    }
-
-    if (event->code == INPUT_REL_HWHEEL && cfg->axis != AXIS_Y) {
-        int32_t delta_fp = (int32_t)event->value << FP_SHIFT;
-        data->vel_x = ((int64_t)delta_fp * cfg->gain +
-                       (int64_t)data->vel_x * cfg->blend) / 1000;
-        data->vel_x = clamp_velocity(data->vel_x, cfg->limit_fp);
-        data->total_movement += abs32(event->value);
-        updated = true;
-    }
-
-    if (!updated) {
+    if (!is_y && !is_x) {
         return ZMK_INPUT_PROC_CONTINUE;
     }
 
-    /* Cancel running inertia on any real input */
-    if (data->inertia_active) {
-        cancel_inertia(data);
-        /* Re-apply the delta that just arrived so the new gesture
-         * starts tracking from this first event, not from zero. */
-        if (event->code == INPUT_REL_WHEEL && cfg->axis != AXIS_X) {
-            int32_t delta_fp = (int32_t)event->value << FP_SHIFT;
-            data->vel_y = ((int64_t)delta_fp * cfg->gain) / 1000;
-            data->total_movement = abs32(event->value);
+    /*
+     * scroll_scaler produces many value=0 events because its large
+     * divisor means the internal remainder hasn't accumulated to a
+     * full unit yet.  These zeros carry no velocity information and
+     * would drag the EMA toward 0, so skip them for tracking.
+     * However, they DO prove the ball is still moving, so we always
+     * reset the stop-detection timer below.
+     */
+
+    if (event->value != 0) {
+        /* Cancel running inertia on non-zero real input */
+        if (data->inertia_active) {
+            cancel_inertia(data);
         }
-        if (event->code == INPUT_REL_HWHEEL && cfg->axis != AXIS_Y) {
+
+        if (is_y) {
             int32_t delta_fp = (int32_t)event->value << FP_SHIFT;
-            data->vel_x = ((int64_t)delta_fp * cfg->gain) / 1000;
-            data->total_movement = abs32(event->value);
+            data->vel_y = ((int64_t)delta_fp * cfg->gain +
+                           (int64_t)data->vel_y * cfg->blend) / 1000;
+            data->vel_y = clamp_velocity(data->vel_y, cfg->limit_fp);
+            data->total_movement += abs32(event->value);
+        }
+        if (is_x) {
+            int32_t delta_fp = (int32_t)event->value << FP_SHIFT;
+            data->vel_x = ((int64_t)delta_fp * cfg->gain +
+                           (int64_t)data->vel_x * cfg->blend) / 1000;
+            data->vel_x = clamp_velocity(data->vel_x, cfg->limit_fp);
+            data->total_movement += abs32(event->value);
         }
     }
 
-    /* (Re)start stop-detection timer */
-    k_work_reschedule(&data->stop_detect_work, K_MSEC(cfg->release_ms));
+    /* Always reset stop detection — the ball is still in motion
+     * even when the scaler emits zero. */
+    if (!data->inertia_active) {
+        k_work_reschedule(&data->stop_detect_work, K_MSEC(cfg->release_ms));
+    }
 
     return ZMK_INPUT_PROC_CONTINUE;
 }
