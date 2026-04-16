@@ -1,0 +1,2 @@
+zephyr_library_sources_ifdef(CONFIG_ZMK_BEHAVIOR_SENSOR_ROTATE_DIR_LOCK
+    src/behavior_sensor_rotate_dir_lock.c)

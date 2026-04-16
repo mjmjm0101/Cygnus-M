@@ -1,4 +1,7 @@
 name: Cygnus-M
 build:
+  cmake: .
+  kconfig: Kconfig
   settings:
     board_root: config
+    dts_root: .

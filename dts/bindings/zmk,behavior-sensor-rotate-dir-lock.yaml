@@ -1,0 +1,19 @@
+description: Sensor rotate behavior with direction lock
+
+compatible: "zmk,behavior-sensor-rotate-dir-lock"
+
+properties:
+  "#sensor-binding-cells":
+    type: int
+    required: true
+    const: 2
+  bindings:
+    type: phandles
+    required: true
+  tap-ms:
+    type: int
+    default: 5
+
+sensor-binding-cells:
+  - param1
+  - param2

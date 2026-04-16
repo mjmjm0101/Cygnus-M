@@ -1,4 +1,7 @@
 #include "Cygnus.dtsi"
+#include <input/processors.dtsi>
+#include <behaviors/input_gestures_accel.dtsi>
+#include <dt-bindings/input/input-event-codes.h>
 
 &default_transform {
     col-offset = <7>;
@@ -7,21 +10,53 @@
 &kscan0 {
         col-gpios
             = <&xiao_d 10 GPIO_ACTIVE_HIGH>
-            , <&xiao_d 9 GPIO_ACTIVE_HIGH> 
-            , <&xiao_d 8 GPIO_ACTIVE_HIGH> 
-            , <&xiao_d 7 GPIO_ACTIVE_HIGH> 
+            , <&xiao_d 9 GPIO_ACTIVE_HIGH>
+            , <&xiao_d 8 GPIO_ACTIVE_HIGH>
+            , <&xiao_d 7 GPIO_ACTIVE_HIGH>
             , <&gpio0 10 GPIO_ACTIVE_HIGH>
             , <&gpio1 10 GPIO_ACTIVE_HIGH>
             ;
 };
 
 / {
-    trackball_listener {
+    zip_temp_layer_threshold: zip_temp_layer_threshold {
+        compatible = "zmk,input-processor-temp-layer-threshold";
+        #input-processor-cells = <2>;
+        threshold = <600>;         /* 約1/5回転 (25mm球, 1000CPI) */
+        reset-timeout-ms = <200>;  /* 動きが止まったらカウントリセット */
+    };
+
+    trackball_listener: trackball_listener {
         compatible = "zmk,input-listener";
         device = <&trackball>;
+        input-processors = <
+            &pointer_accel
+            &zip_y_scaler 21 20
+            &zip_temp_layer_threshold 3 10000
+        >;
 
+        scroller {
+            layers = <4>;
+            input-processors = <
+                &pointer_accel
+                &zip_y_scaler (-1) 1
+                &zip_xy_to_scroll_mapper
+                &zip_scroll_scaler 4 450
+            >;
+        };
     };
 };
+
+&pointer_accel {
+    input-type = <INPUT_EV_REL>;
+    min-factor = <80>;             /* 開始速度: 低速をさらに抑える */
+    max-factor = <500>;            /* 最大速度: 加速の勢いを緩める */
+    speed-threshold = <333>;       /* 加速開始点 */
+    speed-max = <3000>;            /* この速度で最大に到達 */
+    acceleration-exponent = <1>;   /* 線形 */
+};
+
+&xiao_serial { status = "disabled"; };
 
 &pinctrl {
     spi0_default: spi0_default {
@@ -42,8 +77,6 @@
     };
 };
 
-&xiao_serial { status = "disabled"; };
-
 &spi0 {
     status = "okay";
     compatible = "nordic,nrf-spim";
@@ -58,9 +91,5 @@
         reg = <0>;
         spi-max-frequency = <2000000>;
         irq-gpios = <&gpio0 2 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
-        automouse-layer = <4>;
-        scroll-layers = <5>;
     };
 };
-
-
