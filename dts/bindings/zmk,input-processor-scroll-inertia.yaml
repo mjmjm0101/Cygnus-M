@@ -10,6 +10,12 @@ properties:
     type: int
     required: true
     const: 0
+  track-remainders:
+    type: boolean
+    description: |
+      Required by ZMK input listener framework.
+      This processor manages its own remainders internally,
+      so this should be left unset (false).
 
   # ── EMA velocity filter ──────────────────────────────────
   gain:
