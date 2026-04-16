@@ -1,0 +1,111 @@
+description: |
+  Input processor that adds inertial scrolling to trackball scroll mode.
+  Tracks scroll velocity and generates decaying scroll events after the
+  trackball stops moving.  Designed for BLE keyboards with integer-only math.
+
+compatible: "zmk,input-processor-scroll-inertia"
+
+properties:
+  "#input-processor-cells":
+    type: int
+    required: true
+    const: 0
+
+  # ── EMA velocity filter ──────────────────────────────────
+  gain:
+    type: int
+    default: 300
+    description: |
+      EMA input weight (permille).
+      velocity = (delta × gain + velocity × blend) / 1000
+  blend:
+    type: int
+    default: 700
+    description: |
+      EMA history weight (permille).  gain + blend should equal 1000.
+
+  # ── Inertia start conditions ─────────────────────────────
+  start:
+    type: int
+    default: 5
+    description: |
+      Minimum EMA velocity (scroll units) to trigger inertia.
+  move:
+    type: int
+    default: 30
+    description: |
+      Minimum cumulative absolute movement (scroll units) within a
+      gesture required to trigger inertia.  Prevents noise-triggered
+      activation.
+  release:
+    type: int
+    default: 24
+    description: |
+      Milliseconds of no input before the trackball is considered
+      released.  24 ms ≈ 3 frames at 125 Hz.
+
+  # ── Decay ────────────────────────────────────────────────
+  fast:
+    type: int
+    default: 8
+    description: |
+      Velocity boundary (scroll units) between fast and slow decay
+      zones.
+  decay-fast:
+    type: int
+    default: 950
+    description: |
+      High-speed decay rate (permille per tick).
+      950 = multiply by 0.95 each tick.
+  decay-slow:
+    type: int
+    default: 850
+    description: |
+      Low-speed decay rate (permille per tick).
+      Lower value makes the tail stop more crisply.
+  stop:
+    type: int
+    default: 1
+    description: |
+      Velocity (scroll units) below which inertia stops immediately.
+
+  # ── Output ───────────────────────────────────────────────
+  scale:
+    type: int
+    default: 1000
+    description: |
+      Velocity-to-scroll multiplier (permille).
+      1000 = 1:1 mapping from velocity to scroll output per tick.
+  limit:
+    type: int
+    default: 20
+    description: |
+      Maximum velocity cap (scroll units).  Prevents runaway scrolling.
+  span:
+    type: int
+    default: 800
+    description: |
+      Maximum inertia duration in milliseconds.
+  tick:
+    type: int
+    default: 8
+    description: |
+      Inertia update interval in milliseconds.
+
+  # ── Behaviour ────────────────────────────────────────────
+  axis:
+    type: int
+    default: 0
+    description: |
+      Which axes receive inertia.  0 = both, 1 = Y only, 2 = X only.
+  cancel:
+    type: int
+    default: 0
+    description: |
+      Re-input cancel mode.  0 = immediate cancel (recommended).
+  layer:
+    type: int
+    default: -1
+    description: |
+      Scroll layer index.  When >= 0, inertia stops immediately if this
+      layer becomes inactive.  -1 = no layer check.

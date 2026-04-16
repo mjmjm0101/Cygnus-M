@@ -26,6 +26,37 @@
         reset-timeout-ms = <200>;  /* 動きが止まったらカウントリセット */
     };
 
+    scroll_inertia: scroll_inertia {
+        compatible = "zmk,input-processor-scroll-inertia";
+        #input-processor-cells = <0>;
+
+        /* EMAフィルタ (gain+blend=1000) */
+        gain     = <300>;         /* α≈0.3: 新入力の反映度 */
+        blend    = <700>;         /* 直前速度の維持度 */
+
+        /* 慣性開始条件 */
+        start    = <3>;           /* 速度閾値 (scroll_scaler後の単位) */
+        move     = <15>;          /* 累積移動量閾値 */
+        release  = <24>;          /* 離し判定 (ms, 125Hz×3フレーム) */
+
+        /* 2段階減衰 */
+        fast     = <5>;           /* 高速/低速の境界 */
+        decay-fast = <960>;       /* 高速域: なめらかに伸びる */
+        decay-slow = <870>;       /* 低速域: ピタッと止まる */
+        stop     = <1>;           /* これ以下で即停止 */
+
+        /* 出力制御 */
+        scale    = <1000>;        /* 1:1マッピング */
+        limit    = <15>;          /* scroll_scaler後の上限 */
+        span     = <600>;         /* 最大持続 (ms) */
+        tick     = <8>;           /* 更新周期 (ms, 125Hzに合わせる) */
+
+        /* 動作 */
+        axis     = <0>;           /* 0=両軸 */
+        cancel   = <0>;           /* 0=即キャンセル */
+        layer    = <4>;           /* SCROLLレイヤー */
+    };
+
     trackball_listener: trackball_listener {
         compatible = "zmk,input-listener";
         device = <&trackball>;
@@ -42,6 +73,7 @@
                 &zip_y_scaler (-1) 1
                 &zip_xy_to_scroll_mapper
                 &zip_scroll_scaler 4 450
+                &scroll_inertia
             >;
         };
     };
