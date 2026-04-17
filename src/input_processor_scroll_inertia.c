@@ -329,7 +329,9 @@ static void stop_detect_handler(struct k_work *work) {
     if (vel_ok && mov_ok) {
         start_inertia(data, cfg);
     } else {
-        reset_gesture(data);
+        /* Don't reset axis lock — the user may just be pausing
+         * briefly during a direction change. */
+        reset_tracking(data);
     }
 }
 
@@ -525,31 +527,29 @@ static int scroll_inertia_handle_event(const struct device *dev,
         }
     }
 
-    /* ── Check if armed (flick detected) ── */
+    /* ── Check if armed (flick detected) ──
+     * When axis lock is active, only the dominant axis counts.
+     * This prevents noise on the non-dominant axis from arming. */
     bool vel_armed = false;
-    if (cfg->axis != AXIS_X) vel_armed |= (abs32(data->peak_vel_y) >= cfg->start_fp);
-    if (cfg->axis != AXIS_Y) vel_armed |= (abs32(data->peak_vel_x) >= cfg->start_fp);
+    bool check_y = (data->dominant == AXIS_Y) ||
+                   (data->dominant == 0 && cfg->axis != AXIS_X);
+    bool check_x = (data->dominant == AXIS_X) ||
+                   (data->dominant == 0 && cfg->axis != AXIS_Y);
+    if (check_y) vel_armed |= (abs32(data->peak_vel_y) >= cfg->start_fp);
+    if (check_x) vel_armed |= (abs32(data->peak_vel_x) >= cfg->start_fp);
     bool armed = vel_armed && data->total_movement >= cfg->move;
 
-    /* ── Deceleration detection ──
-     * Compare against PEAK velocity, not just the previous sample.
-     * A minor EMA fluctuation during steady scrolling stays within
-     * ~5% of peak and won't cross the 90% threshold.  A genuine
-     * flick-and-release drops well below 90% within a few events. */
+    /* ── Deceleration detection (dominant axis only) ── */
     if (armed) {
         bool decelerating = false;
-        if (is_y && abs32(data->vel_y) <
+        if (is_y && check_y && abs32(data->vel_y) <
                 abs32(data->peak_vel_y) * DECEL_PEAK_RATIO / 1000) {
-            /* Only count when the raw event direction matches the peak.
-             * During a reversal the EMA lags behind the actual direction,
-             * making the transition look like deceleration from the old
-             * direction's peak. */
             if (data->peak_vel_y == 0 ||
                 (event->value > 0) == (data->peak_vel_y > 0)) {
                 decelerating = true;
             }
         }
-        if (is_x && abs32(data->vel_x) <
+        if (is_x && check_x && abs32(data->vel_x) <
                 abs32(data->peak_vel_x) * DECEL_PEAK_RATIO / 1000) {
             if (data->peak_vel_x == 0 ||
                 (event->value > 0) == (data->peak_vel_x > 0)) {
