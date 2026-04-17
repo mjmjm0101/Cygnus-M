@@ -89,6 +89,8 @@ struct scroll_inertia_data {
     int32_t decel_count;
     int32_t tracking_count;
 
+    int32_t pending_other;   /* buffered non-tracked axis for merge */
+
     int32_t accum_x;
     int32_t accum_y;
 
@@ -109,6 +111,18 @@ struct scroll_inertia_data {
 
 static inline int32_t abs32(int32_t v) { return v < 0 ? -v : v; }
 
+/*
+ * Integer approximation of sqrt(a² + b²).
+ * Uses max(|a|,|b|) + min(|a|,|b|)/2  (max error ~12%).
+ */
+static inline int32_t fast_magnitude(int32_t a, int32_t b) {
+    int32_t aa = abs32(a);
+    int32_t bb = abs32(b);
+    int32_t hi = aa > bb ? aa : bb;
+    int32_t lo = aa > bb ? bb : aa;
+    return hi + (lo >> 1);
+}
+
 static inline int32_t clamp_velocity(int32_t vel, int32_t limit_fp) {
     if (vel > limit_fp)  return limit_fp;
     if (vel < -limit_fp) return -limit_fp;
@@ -124,6 +138,7 @@ static void reset_state(struct scroll_inertia_data *data) {
     data->decel_count = 0;
     data->tracking_count = 0;
     data->suppress_count = 0;
+    data->pending_other = 0;
 }
 
 static void cancel_inertia(struct scroll_inertia_data *data) {
@@ -277,8 +292,49 @@ static int scroll_inertia_handle_event(const struct device *dev,
         return ZMK_INPUT_PROC_CONTINUE;
     }
 
-    bool is_y = (event->code == INPUT_REL_WHEEL  && cfg->axis != AXIS_X);
-    bool is_x = (event->code == INPUT_REL_HWHEEL && cfg->axis != AXIS_Y);
+    bool is_y = (event->code == INPUT_REL_WHEEL);
+    bool is_x = (event->code == INPUT_REL_HWHEEL);
+
+    if (!is_y && !is_x) {
+        return ZMK_INPUT_PROC_CONTINUE;
+    }
+
+    /* ── MAGNITUDE MERGE ──
+     * In single-axis mode, fold the non-tracked axis component into
+     * the tracked axis so that diagonal rotation produces the same
+     * scroll amount as straight rotation of equal physical distance. */
+    if (cfg->axis == AXIS_Y && is_x) {
+        data->pending_other = event->value;
+        event->value = 0;
+        data->last_event_time = k_uptime_get();
+        if (!data->inertia_active) {
+            k_work_reschedule(&data->stop_detect_work,
+                              K_MSEC(cfg->release_ms));
+        }
+        return ZMK_INPUT_PROC_CONTINUE;
+    }
+    if (cfg->axis == AXIS_X && is_y) {
+        data->pending_other = event->value;
+        event->value = 0;
+        data->last_event_time = k_uptime_get();
+        if (!data->inertia_active) {
+            k_work_reschedule(&data->stop_detect_work,
+                              K_MSEC(cfg->release_ms));
+        }
+        return ZMK_INPUT_PROC_CONTINUE;
+    }
+
+    /* Merge buffered non-tracked component into tracked axis */
+    if (data->pending_other != 0 && event->value != 0) {
+        int32_t sign = event->value >= 0 ? 1 : -1;
+        event->value = sign * fast_magnitude(event->value,
+                                              data->pending_other);
+        data->pending_other = 0;
+    }
+
+    /* Re-evaluate which axis this event is for (after merge) */
+    is_y = (event->code == INPUT_REL_WHEEL  && cfg->axis != AXIS_X);
+    is_x = (event->code == INPUT_REL_HWHEEL && cfg->axis != AXIS_Y);
 
     if (!is_y && !is_x) {
         return ZMK_INPUT_PROC_CONTINUE;
