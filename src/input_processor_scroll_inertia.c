@@ -400,27 +400,38 @@ static int scroll_inertia_handle_event(const struct device *dev,
      * straight roll of the same physical distance.
      * ──────────────────────────────────────────────────────────────── */
     if (cfg->lock > 0 && !data->inertia_active && event->value != 0) {
+        /* Decay both sums so old movement fades and the lock
+         * naturally releases when the user changes direction.
+         * At 980/1000 per event (two events per sample at 125 Hz),
+         * the effective half-life is ~17 samples ≈ 136 ms. */
+        data->sum_abs_y = data->sum_abs_y * 980 / 1000;
+        data->sum_abs_x = data->sum_abs_x * 980 / 1000;
+
         if (is_y) data->sum_abs_y += abs32(event->value);
         if (is_x) data->sum_abs_x += abs32(event->value);
 
         int32_t new_dominant = 0;
         if (data->sum_abs_x + data->sum_abs_y >= cfg->lock) {
-            /* Require 2:1 ratio to lock.  If neither axis is
-             * clearly dominant, keep both open.  This prevents
-             * locking to X when the user barely grazes the ball
-             * horizontally before scrolling vertically. */
+            /* Require 2:1 ratio to lock. */
             if (data->sum_abs_y >= data->sum_abs_x * 2) {
                 new_dominant = AXIS_Y;
             } else if (data->sum_abs_x >= data->sum_abs_y * 2) {
                 new_dominant = AXIS_X;
             }
+            /* else: ratio not decisive → unlock (0) */
         }
 
-        if (new_dominant != 0 && new_dominant != data->dominant) {
+        if (new_dominant != data->dominant) {
             data->dominant = new_dominant;
-            LOG_DBG("Axis locked: %s (sum_y=%d sum_x=%d)",
-                    data->dominant == AXIS_Y ? "Y" : "X",
-                    data->sum_abs_y, data->sum_abs_x);
+            data->pending_other = 0;
+            if (new_dominant != 0) {
+                LOG_DBG("Axis locked: %s (sum_y=%d sum_x=%d)",
+                        new_dominant == AXIS_Y ? "Y" : "X",
+                        data->sum_abs_y, data->sum_abs_x);
+            } else {
+                LOG_DBG("Axis unlocked (sum_y=%d sum_x=%d)",
+                        data->sum_abs_y, data->sum_abs_x);
+            }
         }
     }
 
