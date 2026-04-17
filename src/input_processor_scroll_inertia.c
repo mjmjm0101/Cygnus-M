@@ -3,12 +3,11 @@
  *
  * Adds inertial scrolling to trackball scroll mode.
  *
- * Design goals:
- *   - Trigger only on intentional flicks (velocity + movement gate)
- *   - Two-stage decay: smooth coast at high speed, crisp stop at low speed
- *   - BLE-safe: integer-only math, accumulator-based output
- *   - Immediate cancel on reverse / re-input
- *   - Layer-aware: stops when scroll layer deactivates
+ * The processor monitors scroll velocity and, once a flick is detected,
+ * takes over at the moment deceleration begins — suppressing the
+ * trackball's natural slowdown and replacing it with a smooth,
+ * configurable decay curve.  This eliminates the perceptible gap
+ * between the physical scroll stopping and inertia kicking in.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -36,37 +35,35 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #define AXIS_Y    1
 #define AXIS_X    2
 
+/* Consecutive EMA decreases required to confirm deceleration */
+#define DECEL_CONFIRM_COUNT 2
+
 /* ------------------------------------------------------------------ */
-/* Configuration (read from Devicetree at compile time)                */
+/* Configuration                                                       */
 /* ------------------------------------------------------------------ */
 
 struct scroll_inertia_config {
-    /* EMA filter */
-    int32_t gain;          /* permille */
-    int32_t blend;         /* permille */
+    int32_t gain;
+    int32_t blend;
 
-    /* Start conditions */
-    int32_t start_fp;      /* min velocity (fixed-point) */
-    int32_t move;          /* min cumulative movement (raw units) */
-    int32_t release_ms;    /* no-input timeout */
+    int32_t start_fp;
+    int32_t move;
+    int32_t release_ms;
 
-    /* Decay */
-    int32_t fast_fp;       /* fast/slow boundary (fixed-point) */
-    int32_t decay_fast;    /* high-speed decay (permille) */
-    int32_t decay_slow;    /* low-speed decay (permille) */
-    int32_t stop_fp;       /* stop threshold (fixed-point) */
+    int32_t fast_fp;
+    int32_t decay_fast;
+    int32_t decay_slow;
+    int32_t stop_fp;
 
-    /* Output */
-    int32_t scale;         /* output scale numerator */
-    int32_t scale_div;     /* output scale denominator */
-    int32_t limit_fp;      /* max velocity (fixed-point) */
-    int32_t span_ms;       /* max duration */
-    int32_t tick_ms;       /* update interval */
+    int32_t scale;
+    int32_t scale_div;
+    int32_t limit_fp;
+    int32_t span_ms;
+    int32_t tick_ms;
 
-    /* Behaviour */
-    int32_t axis;          /* 0=both, 1=Y, 2=X */
-    int32_t cancel;        /* 0=immediate */
-    int32_t layer;         /* scroll layer (-1=no check) */
+    int32_t axis;
+    int32_t cancel;
+    int32_t layer;
 };
 
 /* ------------------------------------------------------------------ */
@@ -76,12 +73,19 @@ struct scroll_inertia_config {
 struct scroll_inertia_data {
     const struct device *dev;
 
-    /* Velocity (fixed-point ×256) */
+    /* Velocity EMA (fixed-point ×256) */
     int32_t vel_x;
     int32_t vel_y;
 
+    /* Peak velocity in current gesture (fixed-point) */
+    int32_t peak_vel_x;
+    int32_t peak_vel_y;
+
     /* Cumulative |delta| for the current gesture */
     int32_t total_movement;
+
+    /* Consecutive EMA-decrease count for deceleration detection */
+    int32_t decel_count;
 
     /* Sub-unit scroll accumulators */
     int32_t accum_x;
@@ -108,18 +112,40 @@ static inline int32_t clamp_velocity(int32_t vel, int32_t limit_fp) {
     return vel;
 }
 
+static void reset_gesture(struct scroll_inertia_data *data) {
+    data->vel_x = 0;
+    data->vel_y = 0;
+    data->peak_vel_x = 0;
+    data->peak_vel_y = 0;
+    data->total_movement = 0;
+    data->decel_count = 0;
+}
+
 static void cancel_inertia(struct scroll_inertia_data *data) {
     data->inertia_active = false;
     k_work_cancel_delayable(&data->inertia_tick_work);
     data->accum_x = 0;
     data->accum_y = 0;
-    data->vel_x = 0;
-    data->vel_y = 0;
-    data->total_movement = 0;
+    reset_gesture(data);
+}
+
+static void start_inertia(struct scroll_inertia_data *data,
+                          const struct scroll_inertia_config *cfg) {
+    data->inertia_active = true;
+    data->inertia_start_time = k_uptime_get();
+    data->accum_x = 0;
+    data->accum_y = 0;
+    k_work_cancel_delayable(&data->stop_detect_work);
+
+    LOG_DBG("Inertia start  vel_y=%d vel_x=%d  peak_y=%d peak_x=%d  mov=%d",
+            data->vel_y, data->vel_x,
+            data->peak_vel_y, data->peak_vel_x, data->total_movement);
+
+    k_work_schedule(&data->inertia_tick_work, K_MSEC(cfg->tick_ms));
 }
 
 /* ------------------------------------------------------------------ */
-/* Inertia tick (runs on system workqueue)                              */
+/* Inertia tick                                                        */
 /* ------------------------------------------------------------------ */
 
 static void inertia_tick_handler(struct k_work *work) {
@@ -132,7 +158,7 @@ static void inertia_tick_handler(struct k_work *work) {
         return;
     }
 
-    /* ── Layer gate (only for RUNNING inertia) ── */
+    /* ── Layer gate ── */
     if (cfg->layer >= 0 && !zmk_keymap_layer_active(cfg->layer)) {
         LOG_DBG("Inertia cancelled: layer %d inactive", cfg->layer);
         cancel_inertia(data);
@@ -141,28 +167,26 @@ static void inertia_tick_handler(struct k_work *work) {
 
     /* ── Duration gate ── */
     if (k_uptime_get() - data->inertia_start_time > cfg->span_ms) {
-        LOG_DBG("Inertia cancelled: max duration reached");
         cancel_inertia(data);
         return;
     }
 
     /* ── Two-stage decay ── */
     if (cfg->axis != AXIS_X) {
-        int32_t decay = abs32(data->vel_y) > cfg->fast_fp
-                            ? cfg->decay_fast : cfg->decay_slow;
-        data->vel_y = (int64_t)data->vel_y * decay / 1000;
+        int32_t d = abs32(data->vel_y) > cfg->fast_fp
+                        ? cfg->decay_fast : cfg->decay_slow;
+        data->vel_y = (int64_t)data->vel_y * d / 1000;
     }
     if (cfg->axis != AXIS_Y) {
-        int32_t decay = abs32(data->vel_x) > cfg->fast_fp
-                            ? cfg->decay_fast : cfg->decay_slow;
-        data->vel_x = (int64_t)data->vel_x * decay / 1000;
+        int32_t d = abs32(data->vel_x) > cfg->fast_fp
+                        ? cfg->decay_fast : cfg->decay_slow;
+        data->vel_x = (int64_t)data->vel_x * d / 1000;
     }
 
     /* ── Stop gate ── */
     bool below_y = (cfg->axis == AXIS_X) || abs32(data->vel_y) < cfg->stop_fp;
     bool below_x = (cfg->axis == AXIS_Y) || abs32(data->vel_x) < cfg->stop_fp;
     if (below_y && below_x) {
-        LOG_DBG("Inertia cancelled: velocity below stop threshold");
         cancel_inertia(data);
         return;
     }
@@ -186,15 +210,13 @@ static void inertia_tick_handler(struct k_work *work) {
         zmk_hid_mouse_scroll_set(emit_x, emit_y);
         zmk_endpoints_send_mouse_report();
         zmk_hid_mouse_scroll_set(0, 0);
-        LOG_DBG("Inertia emit  x=%d y=%d", emit_x, emit_y);
     }
 
-    /* ── Next tick ── */
     k_work_schedule(&data->inertia_tick_work, K_MSEC(cfg->tick_ms));
 }
 
 /* ------------------------------------------------------------------ */
-/* Stop detection (fires after release-ms of silence)                  */
+/* Stop detection (fallback for abrupt stops)                          */
 /* ------------------------------------------------------------------ */
 
 static void stop_detect_handler(struct k_work *work) {
@@ -203,46 +225,25 @@ static void stop_detect_handler(struct k_work *work) {
         CONTAINER_OF(dwork, struct scroll_inertia_data, stop_detect_work);
     const struct scroll_inertia_config *cfg = data->dev->config;
 
-    /* ── Gate 1: velocity ── */
+    /* Already running from deceleration detection */
+    if (data->inertia_active) {
+        return;
+    }
+
     bool vel_ok = false;
     if (cfg->axis != AXIS_X) vel_ok |= (abs32(data->vel_y) >= cfg->start_fp);
     if (cfg->axis != AXIS_Y) vel_ok |= (abs32(data->vel_x) >= cfg->start_fp);
 
-    /* ── Gate 2: cumulative movement ── */
     bool mov_ok = data->total_movement >= cfg->move;
 
-    /* Always reset movement for next gesture */
-    int32_t saved_movement = data->total_movement;
-    data->total_movement = 0;
+    LOG_DBG("Stop detect (fallback): vel_y=%d vel_x=%d mov=%d vel_ok=%d mov_ok=%d",
+            data->vel_y, data->vel_x, data->total_movement, vel_ok, mov_ok);
 
-    LOG_DBG("Stop detect: vel_y=%d vel_x=%d start_fp=%d movement=%d move=%d",
-            data->vel_y, data->vel_x, cfg->start_fp, saved_movement, cfg->move);
-
-    if (!vel_ok || !mov_ok) {
-        LOG_DBG("Inertia skipped: vel_ok=%d mov_ok=%d",
-                vel_ok, mov_ok);
-        data->vel_x = 0;
-        data->vel_y = 0;
-        return;
+    if (vel_ok && mov_ok) {
+        start_inertia(data, cfg);
+    } else {
+        reset_gesture(data);
     }
-
-    /*
-     * No layer check here: the velocity data was collected while
-     * the scroll layer was active.  The user may have released the
-     * layer key between the last event and this handler firing.
-     * Layer exit is enforced in the tick handler instead.
-     */
-
-    /* ── Start inertia ── */
-    data->inertia_active = true;
-    data->inertia_start_time = k_uptime_get();
-    data->accum_x = 0;
-    data->accum_y = 0;
-
-    LOG_DBG("Inertia start  vel_x=%d  vel_y=%d  movement=%d",
-            data->vel_x, data->vel_y, saved_movement);
-
-    k_work_schedule(&data->inertia_tick_work, K_MSEC(cfg->tick_ms));
 }
 
 /* ------------------------------------------------------------------ */
@@ -260,7 +261,6 @@ static int scroll_inertia_handle_event(const struct device *dev,
         return ZMK_INPUT_PROC_CONTINUE;
     }
 
-    /* Identify whether this event is on a tracked axis */
     bool is_y = (event->code == INPUT_REL_WHEEL  && cfg->axis != AXIS_X);
     bool is_x = (event->code == INPUT_REL_HWHEEL && cfg->axis != AXIS_Y);
 
@@ -268,46 +268,103 @@ static int scroll_inertia_handle_event(const struct device *dev,
         return ZMK_INPUT_PROC_CONTINUE;
     }
 
-    /*
-     * scroll_scaler produces many value=0 events because its large
-     * divisor means the internal remainder hasn't accumulated to a
-     * full unit yet.  These zeros carry no velocity information and
-     * would drag the EMA toward 0, so skip them for tracking.
-     * However, they DO prove the ball is still moving, so we always
-     * reset the stop-detection timer below.
-     */
-
-    if (event->value != 0) {
-        /* Cancel running inertia on non-zero real input */
-        if (data->inertia_active) {
-            cancel_inertia(data);
+    /* ────────────────────────────────────────────────────────────────
+     * INERTIA ACTIVE — decide whether to suppress or cancel
+     * ──────────────────────────────────────────────────────────────── */
+    if (data->inertia_active) {
+        if (event->value == 0) {
+            return ZMK_INPUT_PROC_CONTINUE;
         }
 
-        if (is_y) {
-            int32_t delta_fp = (int32_t)event->value << FP_SHIFT;
-            data->vel_y = ((int64_t)delta_fp * cfg->gain +
-                           (int64_t)data->vel_y * cfg->blend) / 1000;
-            data->vel_y = clamp_velocity(data->vel_y, cfg->limit_fp);
-            data->total_movement += abs32(event->value);
-        }
-        if (is_x) {
-            int32_t delta_fp = (int32_t)event->value << FP_SHIFT;
-            data->vel_x = ((int64_t)delta_fp * cfg->gain +
-                           (int64_t)data->vel_x * cfg->blend) / 1000;
-            data->vel_x = clamp_velocity(data->vel_x, cfg->limit_fp);
-            data->total_movement += abs32(event->value);
+        /* Which axis velocity to compare against? */
+        int32_t inertia_vel = is_y ? data->vel_y : data->vel_x;
+        int32_t event_vel_fp = (int32_t)event->value << FP_SHIFT;
+        bool same_dir = (event->value > 0) == (inertia_vel > 0);
+
+        if (same_dir && abs32(event_vel_fp) <= abs32(inertia_vel)) {
+            /* Ball's natural deceleration — suppress this event
+             * so only the inertia decay drives scrolling. */
+            event->value = 0;
+            return ZMK_INPUT_PROC_CONTINUE;
         }
 
-        LOG_DBG("Input: code=0x%02x val=%d vel_y=%d vel_x=%d mov=%d",
-                event->code, event->value, data->vel_y, data->vel_x,
-                data->total_movement);
+        /* Reverse direction or faster input — user is re-controlling.
+         * Cancel inertia and fall through to normal tracking. */
+        LOG_DBG("Inertia cancelled by re-input: val=%d inertia_vel=%d",
+                event->value, inertia_vel);
+        cancel_inertia(data);
+        /* Fall through to tracking below */
     }
 
-    /* Always reset stop detection — the ball is still in motion
-     * even when the scaler emits zero. */
-    if (!data->inertia_active) {
+    /* ────────────────────────────────────────────────────────────────
+     * TRACKING — update velocity and detect deceleration
+     * ──────────────────────────────────────────────────────────────── */
+    if (event->value == 0) {
+        /* Zero events just prove the ball is in motion — reset the
+         * stop-detect fallback timer but don't touch velocity. */
         k_work_reschedule(&data->stop_detect_work, K_MSEC(cfg->release_ms));
+        return ZMK_INPUT_PROC_CONTINUE;
     }
+
+    /* Save previous velocity for deceleration detection */
+    int32_t prev_vel_y = data->vel_y;
+    int32_t prev_vel_x = data->vel_x;
+
+    /* Update EMA */
+    if (is_y) {
+        int32_t delta_fp = (int32_t)event->value << FP_SHIFT;
+        data->vel_y = ((int64_t)delta_fp * cfg->gain +
+                       (int64_t)data->vel_y * cfg->blend) / 1000;
+        data->vel_y = clamp_velocity(data->vel_y, cfg->limit_fp);
+        data->total_movement += abs32(event->value);
+
+        if (abs32(data->vel_y) > abs32(data->peak_vel_y)) {
+            data->peak_vel_y = data->vel_y;
+        }
+    }
+    if (is_x) {
+        int32_t delta_fp = (int32_t)event->value << FP_SHIFT;
+        data->vel_x = ((int64_t)delta_fp * cfg->gain +
+                       (int64_t)data->vel_x * cfg->blend) / 1000;
+        data->vel_x = clamp_velocity(data->vel_x, cfg->limit_fp);
+        data->total_movement += abs32(event->value);
+
+        if (abs32(data->vel_x) > abs32(data->peak_vel_x)) {
+            data->peak_vel_x = data->vel_x;
+        }
+    }
+
+    /* ── Check if armed (flick detected) ── */
+    bool vel_armed = false;
+    if (cfg->axis != AXIS_X) vel_armed |= (abs32(data->peak_vel_y) >= cfg->start_fp);
+    if (cfg->axis != AXIS_Y) vel_armed |= (abs32(data->peak_vel_x) >= cfg->start_fp);
+    bool armed = vel_armed && data->total_movement >= cfg->move;
+
+    /* ── Deceleration detection ── */
+    if (armed) {
+        bool decelerating = false;
+        if (is_y && abs32(data->vel_y) < abs32(prev_vel_y)) {
+            decelerating = true;
+        }
+        if (is_x && abs32(data->vel_x) < abs32(prev_vel_x)) {
+            decelerating = true;
+        }
+
+        if (decelerating) {
+            data->decel_count++;
+            if (data->decel_count >= DECEL_CONFIRM_COUNT) {
+                /* Confirmed deceleration — take over now */
+                start_inertia(data, cfg);
+                event->value = 0;
+                return ZMK_INPUT_PROC_CONTINUE;
+            }
+        } else {
+            data->decel_count = 0;
+        }
+    }
+
+    /* Reset stop-detect fallback timer */
+    k_work_reschedule(&data->stop_detect_work, K_MSEC(cfg->release_ms));
 
     return ZMK_INPUT_PROC_CONTINUE;
 }
