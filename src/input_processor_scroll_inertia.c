@@ -49,6 +49,11 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
  * steady scrolling from falsely triggering inertia. */
 #define DECEL_PEAK_RATIO 850
 
+/* Hard safety limit: if this many consecutive events are suppressed
+ * (by axis lock or inertia), force a full state reset.
+ * 50 events ≈ 400 ms at 125 Hz. */
+#define SUPPRESS_SAFETY_LIMIT 50
+
 /* Peak velocity decay rate (permille per event).
  * When current velocity is below peak, the peak decays toward the
  * current velocity.  This prevents a brief initial acceleration
@@ -126,6 +131,9 @@ struct scroll_inertia_data {
     /* Timestamp of the last event (for gesture timeout detection) */
     int64_t last_event_time;
 
+    /* Consecutive suppressed events (safety net) */
+    int32_t suppress_count;
+
     /* Delayed work items */
     struct k_work_delayable stop_detect_work;
     struct k_work_delayable inertia_tick_work;
@@ -166,6 +174,7 @@ static void reset_gesture(struct scroll_inertia_data *data) {
     data->sum_abs_y = 0;
     data->dominant = 0;
     data->pending_other = 0;
+    data->suppress_count = 0;
 }
 
 static void cancel_inertia(struct scroll_inertia_data *data) {
@@ -316,18 +325,29 @@ static int scroll_inertia_handle_event(const struct device *dev,
     }
 
     /* ────────────────────────────────────────────────────────────────
-     * GESTURE TIMEOUT — reset stale state from a previous session
+     * STATE RESET — gesture timeout or suppress safety limit
      * ──────────────────────────────────────────────────────────────── */
     int64_t now = k_uptime_get();
+    bool need_reset = false;
+
     if (data->last_event_time > 0 &&
         now - data->last_event_time > GESTURE_TIMEOUT_MS) {
+        LOG_DBG("Gesture timeout: state reset");
+        need_reset = true;
+    }
+    if (data->suppress_count >= SUPPRESS_SAFETY_LIMIT) {
+        LOG_DBG("Suppress safety limit (%d): forced reset",
+                data->suppress_count);
+        need_reset = true;
+    }
+
+    if (need_reset) {
         if (data->inertia_active) {
             cancel_inertia(data);
         } else {
             reset_gesture(data);
         }
         k_work_cancel_delayable(&data->stop_detect_work);
-        LOG_DBG("Gesture timeout: state reset");
     }
     data->last_event_time = now;
 
@@ -343,10 +363,15 @@ static int scroll_inertia_handle_event(const struct device *dev,
         if (is_y) data->sum_abs_y += abs32(event->value);
         if (is_x) data->sum_abs_x += abs32(event->value);
 
-        if (data->dominant == 0 &&
-            data->sum_abs_x + data->sum_abs_y >= cfg->lock) {
-            data->dominant = (data->sum_abs_y >= data->sum_abs_x)
-                                 ? AXIS_Y : AXIS_X;
+        int32_t new_dominant = 0;
+        if (data->sum_abs_x + data->sum_abs_y >= cfg->lock) {
+            new_dominant = (data->sum_abs_y >= data->sum_abs_x)
+                               ? AXIS_Y : AXIS_X;
+        }
+
+        if (new_dominant != 0 && new_dominant != data->dominant) {
+            /* Initial lock or re-lock (dominant axis changed) */
+            data->dominant = new_dominant;
             LOG_DBG("Axis locked: %s (sum_y=%d sum_x=%d)",
                     data->dominant == AXIS_Y ? "Y" : "X",
                     data->sum_abs_y, data->sum_abs_x);
@@ -359,10 +384,9 @@ static int scroll_inertia_handle_event(const struct device *dev,
             (is_x && data->dominant == AXIS_Y);
 
         if (is_non_dominant) {
-            /* Buffer this value; it will be merged when the dominant
-             * axis event arrives (X and Y come as a pair per sample). */
             data->pending_other = event->value;
             event->value = 0;
+            data->suppress_count++;
             if (!data->inertia_active) {
                 k_work_reschedule(&data->stop_detect_work,
                                   K_MSEC(cfg->release_ms));
@@ -397,6 +421,7 @@ static int scroll_inertia_handle_event(const struct device *dev,
             /* Ball's natural deceleration — suppress this event
              * so only the inertia decay drives scrolling. */
             event->value = 0;
+            data->suppress_count++;
             return ZMK_INPUT_PROC_CONTINUE;
         }
 
@@ -426,11 +451,15 @@ static int scroll_inertia_handle_event(const struct device *dev,
         data->vel_y = clamp_velocity(data->vel_y, cfg->limit_fp);
         data->total_movement += abs32(event->value);
 
-        if (abs32(data->vel_y) > abs32(data->peak_vel_y)) {
+        /* Direction reversal — reset peak for the new direction
+         * so the old direction's peak doesn't cause false decel. */
+        if (data->peak_vel_y != 0 &&
+            (data->vel_y > 0) != (data->peak_vel_y > 0)) {
+            data->peak_vel_y = data->vel_y;
+            data->decel_count = 0;
+        } else if (abs32(data->vel_y) > abs32(data->peak_vel_y)) {
             data->peak_vel_y = data->vel_y;
         } else {
-            /* Decay peak toward current velocity so transient
-             * spikes don't create a permanent high-water mark. */
             int32_t decayed = (int64_t)data->peak_vel_y * PEAK_DECAY / 1000;
             data->peak_vel_y = abs32(decayed) > abs32(data->vel_y)
                                    ? decayed : data->vel_y;
@@ -443,7 +472,11 @@ static int scroll_inertia_handle_event(const struct device *dev,
         data->vel_x = clamp_velocity(data->vel_x, cfg->limit_fp);
         data->total_movement += abs32(event->value);
 
-        if (abs32(data->vel_x) > abs32(data->peak_vel_x)) {
+        if (data->peak_vel_x != 0 &&
+            (data->vel_x > 0) != (data->peak_vel_x > 0)) {
+            data->peak_vel_x = data->vel_x;
+            data->decel_count = 0;
+        } else if (abs32(data->vel_x) > abs32(data->peak_vel_x)) {
             data->peak_vel_x = data->vel_x;
         } else {
             int32_t decayed = (int64_t)data->peak_vel_x * PEAK_DECAY / 1000;
@@ -486,6 +519,9 @@ static int scroll_inertia_handle_event(const struct device *dev,
             data->decel_count = 0;
         }
     }
+
+    /* Event passed through — reset suppress counter */
+    data->suppress_count = 0;
 
     /* Reset stop-detect fallback timer */
     k_work_reschedule(&data->stop_detect_work, K_MSEC(cfg->release_ms));
