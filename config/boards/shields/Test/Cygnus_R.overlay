@@ -31,21 +31,21 @@
         #input-processor-cells = <0>;
         gain     = <300>;
         blend    = <700>;
-        start    = <5>;
-        move     = <80>;
+        start    = <10>;          /* 発動に必要な速度 (5→10) */
+        move     = <150>;         /* 発動に必要な移動量 (80→150) */
         release  = <24>;
         fast     = <25>;
-        decay-fast = <960>;
-        decay-slow = <985>;
+        decay-fast = <980>;       /* ゆるやかに減速 (960→980) */
+        decay-slow = <993>;       /* 長くコースト (985→993) */
         slow     = <12>;
-        decay-tail = <995>;
+        decay-tail = <997>;       /* ツルーンと消える (995→997) */
         stop     = <8>;
         scale    = <4>;
         scale-div = <450>;
         limit    = <600>;
         span     = <600>;
         tick     = <8>;
-        axis     = <1>;           /* Y軸のみ (縦スクロール) */
+        axis     = <1>;
         layer    = <4>;
     };
 
@@ -54,21 +54,21 @@
         #input-processor-cells = <0>;
         gain     = <300>;
         blend    = <700>;
-        start    = <5>;
-        move     = <80>;
+        start    = <10>;
+        move     = <150>;
         release  = <24>;
         fast     = <25>;
-        decay-fast = <960>;
-        decay-slow = <985>;
+        decay-fast = <980>;
+        decay-slow = <993>;
         slow     = <12>;
-        decay-tail = <995>;
+        decay-tail = <997>;
         stop     = <8>;
         scale    = <4>;
         scale-div = <450>;
         limit    = <600>;
         span     = <600>;
         tick     = <8>;
-        axis     = <2>;           /* X軸のみ (横スクロール) */
+        axis     = <2>;
         layer    = <5>;
     };
 
