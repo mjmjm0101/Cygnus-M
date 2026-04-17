@@ -129,6 +129,7 @@ struct scroll_inertia_data {
     /* Inertia state */
     bool inertia_active;
     int64_t inertia_start_time;
+    int32_t start_movement;      /* total_movement at inertia start */
 
     /* Timestamp of the last event (for gesture timeout detection) */
     int64_t last_event_time;
@@ -201,6 +202,7 @@ static void start_inertia(struct scroll_inertia_data *data,
                           const struct scroll_inertia_config *cfg) {
     data->inertia_active = true;
     data->inertia_start_time = k_uptime_get();
+    data->start_movement = data->total_movement;
     data->accum_x = 0;
     data->accum_y = 0;
     k_work_cancel_delayable(&data->stop_detect_work);
@@ -233,8 +235,18 @@ static void inertia_tick_handler(struct k_work *work) {
         return;
     }
 
-    /* ── Duration gate ── */
-    if (k_uptime_get() - data->inertia_start_time > cfg->span_ms) {
+    /* ── Duration gate (scaled by rotation amount) ──
+     * At exactly the move threshold → 20% of span (short inertia).
+     * At 5× the threshold or more → full span.
+     * This prevents tiny flicks from producing long inertia. */
+    int32_t move5 = cfg->move * 5;
+    int32_t ratio = data->start_movement * 1000 / (move5 > 0 ? move5 : 1);
+    if (ratio > 1000) ratio = 1000;
+    int32_t effective_span = cfg->span_ms * ratio / 1000;
+    if (effective_span < cfg->tick_ms * 5) {
+        effective_span = cfg->tick_ms * 5;
+    }
+    if (k_uptime_get() - data->inertia_start_time > effective_span) {
         cancel_inertia(data);
         return;
     }
