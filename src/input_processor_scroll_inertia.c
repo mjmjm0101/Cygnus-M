@@ -191,12 +191,21 @@ static void reset_gesture(struct scroll_inertia_data *data) {
     data->suppress_count = 0;
 }
 
-static void cancel_inertia(struct scroll_inertia_data *data) {
+/* End inertia.
+ * full=true  → natural end (stop/duration/layer gate): full state
+ *               reset because the next scroll is a new gesture.
+ * full=false → user re-input (reverse direction): preserve axis lock
+ *               because the user is still scrolling on the same axis. */
+static void cancel_inertia(struct scroll_inertia_data *data, bool full) {
     data->inertia_active = false;
     k_work_cancel_delayable(&data->inertia_tick_work);
     data->accum_x = 0;
     data->accum_y = 0;
-    reset_tracking(data);
+    if (full) {
+        reset_gesture(data);
+    } else {
+        reset_tracking(data);
+    }
 }
 
 static void start_inertia(struct scroll_inertia_data *data,
@@ -232,7 +241,7 @@ static void inertia_tick_handler(struct k_work *work) {
     /* ── Layer gate ── */
     if (cfg->layer >= 0 && !zmk_keymap_layer_active(cfg->layer)) {
         LOG_DBG("Inertia cancelled: layer %d inactive", cfg->layer);
-        cancel_inertia(data);
+        cancel_inertia(data, true);
         return;
     }
 
@@ -248,7 +257,7 @@ static void inertia_tick_handler(struct k_work *work) {
         effective_span = cfg->tick_ms * 5;
     }
     if (k_uptime_get() - data->inertia_start_time > effective_span) {
-        cancel_inertia(data);
+        cancel_inertia(data, true);
         return;
     }
 
@@ -275,7 +284,7 @@ static void inertia_tick_handler(struct k_work *work) {
     bool below_y = (cfg->axis == AXIS_X) || abs32(data->vel_y) < cfg->stop_fp;
     bool below_x = (cfg->axis == AXIS_Y) || abs32(data->vel_x) < cfg->stop_fp;
     if (below_y && below_x) {
-        cancel_inertia(data);
+        cancel_inertia(data, true);
         return;
     }
 
@@ -383,7 +392,7 @@ static int scroll_inertia_handle_event(const struct device *dev,
 
     if (need_reset) {
         if (data->inertia_active) {
-            cancel_inertia(data);
+            cancel_inertia(data, true);
         } else {
             reset_gesture(data);
         }
@@ -495,7 +504,7 @@ static int scroll_inertia_handle_event(const struct device *dev,
         /* Reverse direction — user wants to go the other way. */
         LOG_DBG("Inertia cancelled by reverse: val=%d inertia_vel=%d",
                 event->value, inertia_vel);
-        cancel_inertia(data);
+        cancel_inertia(data, false);
         /* Fall through to tracking below */
     }
 
