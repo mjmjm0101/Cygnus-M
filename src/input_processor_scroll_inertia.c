@@ -39,9 +39,19 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #define DECEL_CONFIRM_COUNT 3
 
 /* EMA must drop below this fraction of peak to count as deceleration.
- * 900 / 1000 = 90%.  This prevents minor EMA fluctuations during
+ * 850 / 1000 = 85%.  This prevents minor EMA fluctuations during
  * steady scrolling from falsely triggering inertia. */
-#define DECEL_PEAK_RATIO 900
+#define DECEL_PEAK_RATIO 850
+
+/* Peak velocity decay rate (permille per event).
+ * When current velocity is below peak, the peak decays toward the
+ * current velocity.  This prevents a brief initial acceleration
+ * transient from creating a permanently high peak that makes
+ * steady-state scrolling look like "deceleration."
+ *
+ * At 990/1000, peak halves the gap to current vel in ~70 events
+ * (~560ms at 125 Hz). */
+#define PEAK_DECAY 990
 
 /* ------------------------------------------------------------------ */
 /* Configuration                                                       */
@@ -393,6 +403,12 @@ static int scroll_inertia_handle_event(const struct device *dev,
 
         if (abs32(data->vel_y) > abs32(data->peak_vel_y)) {
             data->peak_vel_y = data->vel_y;
+        } else {
+            /* Decay peak toward current velocity so transient
+             * spikes don't create a permanent high-water mark. */
+            int32_t decayed = (int64_t)data->peak_vel_y * PEAK_DECAY / 1000;
+            data->peak_vel_y = abs32(decayed) > abs32(data->vel_y)
+                                   ? decayed : data->vel_y;
         }
     }
     if (is_x) {
@@ -404,6 +420,10 @@ static int scroll_inertia_handle_event(const struct device *dev,
 
         if (abs32(data->vel_x) > abs32(data->peak_vel_x)) {
             data->peak_vel_x = data->vel_x;
+        } else {
+            int32_t decayed = (int64_t)data->peak_vel_x * PEAK_DECAY / 1000;
+            data->peak_vel_x = abs32(decayed) > abs32(data->vel_x)
+                                   ? decayed : data->vel_x;
         }
     }
 
