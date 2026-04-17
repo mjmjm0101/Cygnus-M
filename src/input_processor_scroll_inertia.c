@@ -38,6 +38,12 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 /* Consecutive sub-peak samples required to confirm deceleration */
 #define DECEL_CONFIRM_COUNT 3
 
+/* Minimum events after a reset before arming is allowed.
+ * This gives the EMA time to converge and filters out transient
+ * spikes from shared modules (e.g. pointer_accel switching from
+ * cursor mode to scroll mode). */
+#define MIN_TRACKING_EVENTS 10
+
 /* If no event arrives for this many ms, treat the next event as the
  * start of a brand-new gesture and reset all tracking state.  This
  * prevents stale velocity / peak / axis-lock from a previous scroll
@@ -116,6 +122,9 @@ struct scroll_inertia_data {
     /* Consecutive EMA-decrease count for deceleration detection */
     int32_t decel_count;
 
+    /* Events since last reset (warmup counter) */
+    int32_t tracking_count;
+
     /* Axis lock state */
     int32_t sum_abs_x;       /* cumulative |X| for lock decision */
     int32_t sum_abs_y;       /* cumulative |Y| for lock decision */
@@ -176,6 +185,7 @@ static void reset_tracking(struct scroll_inertia_data *data) {
     data->peak_vel_y = 0;
     data->total_movement = 0;
     data->decel_count = 0;
+    data->tracking_count = 0;
     data->suppress_count = 0;
 }
 
@@ -535,6 +545,8 @@ static int scroll_inertia_handle_event(const struct device *dev,
         return ZMK_INPUT_PROC_CONTINUE;
     }
 
+    data->tracking_count++;
+
     /* Update EMA */
     if (is_y) {
         int32_t delta_fp = (int32_t)event->value << FP_SHIFT;
@@ -590,7 +602,8 @@ static int scroll_inertia_handle_event(const struct device *dev,
                    (data->dominant == 0 && cfg->axis != AXIS_Y);
     if (check_y) vel_armed |= (abs32(data->peak_vel_y) >= cfg->start_fp);
     if (check_x) vel_armed |= (abs32(data->peak_vel_x) >= cfg->start_fp);
-    bool armed = vel_armed && data->total_movement >= cfg->move;
+    bool armed = vel_armed && data->total_movement >= cfg->move
+                 && data->tracking_count >= MIN_TRACKING_EVENTS;
 
     /* ── Deceleration detection (dominant axis only) ── */
     if (armed) {
