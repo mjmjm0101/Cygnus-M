@@ -176,6 +176,7 @@ static void reset_tracking(struct scroll_inertia_data *data) {
     data->peak_vel_y = 0;
     data->total_movement = 0;
     data->decel_count = 0;
+    data->suppress_count = 0;
 }
 
 /* Full reset including axis lock — only used on gesture timeout
@@ -317,9 +318,15 @@ static void stop_detect_handler(struct k_work *work) {
         return;
     }
 
+    /* Respect axis lock — only check dominant axis velocity */
+    bool check_y = (data->dominant == AXIS_Y) ||
+                   (data->dominant == 0 && cfg->axis != AXIS_X);
+    bool check_x = (data->dominant == AXIS_X) ||
+                   (data->dominant == 0 && cfg->axis != AXIS_Y);
+
     bool vel_ok = false;
-    if (cfg->axis != AXIS_X) vel_ok |= (abs32(data->vel_y) >= cfg->start_fp);
-    if (cfg->axis != AXIS_Y) vel_ok |= (abs32(data->vel_x) >= cfg->start_fp);
+    if (check_y) vel_ok |= (abs32(data->vel_y) >= cfg->start_fp);
+    if (check_x) vel_ok |= (abs32(data->vel_x) >= cfg->start_fp);
 
     bool mov_ok = data->total_movement >= cfg->move;
 
@@ -493,12 +500,14 @@ static int scroll_inertia_handle_event(const struct device *dev,
         data->vel_y = clamp_velocity(data->vel_y, cfg->limit_fp);
         data->total_movement += abs32(event->value);
 
-        /* Direction reversal — reset peak for the new direction
-         * so the old direction's peak doesn't cause false decel. */
+        /* Direction reversal — reset peak and movement for the
+         * new direction so the old direction's state doesn't
+         * cause false deceleration or premature arming. */
         if (data->peak_vel_y != 0 &&
             (data->vel_y > 0) != (data->peak_vel_y > 0)) {
             data->peak_vel_y = data->vel_y;
             data->decel_count = 0;
+            data->total_movement = abs32(event->value);
         } else if (abs32(data->vel_y) > abs32(data->peak_vel_y)) {
             data->peak_vel_y = data->vel_y;
         } else {
@@ -518,6 +527,7 @@ static int scroll_inertia_handle_event(const struct device *dev,
             (data->vel_x > 0) != (data->peak_vel_x > 0)) {
             data->peak_vel_x = data->vel_x;
             data->decel_count = 0;
+            data->total_movement = abs32(event->value);
         } else if (abs32(data->vel_x) > abs32(data->peak_vel_x)) {
             data->peak_vel_x = data->vel_x;
         } else {
