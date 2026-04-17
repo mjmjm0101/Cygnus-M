@@ -79,6 +79,8 @@ struct scroll_inertia_config {
     int32_t fast_fp;
     int32_t decay_fast;
     int32_t decay_slow;
+    int32_t slow_fp;
+    int32_t decay_tail;
     int32_t stop_fp;
 
     int32_t scale;
@@ -227,15 +229,22 @@ static void inertia_tick_handler(struct k_work *work) {
         return;
     }
 
-    /* ── Two-stage decay ── */
+    /* ── Three-stage decay ──
+     * fast → decay_fast  (quick main deceleration)
+     * mid  → decay_slow  (gentle coast)
+     * tail → decay_tail  (very gentle fade-out) */
     if (cfg->axis != AXIS_X) {
-        int32_t d = abs32(data->vel_y) > cfg->fast_fp
-                        ? cfg->decay_fast : cfg->decay_slow;
+        int32_t av = abs32(data->vel_y);
+        int32_t d = av > cfg->fast_fp ? cfg->decay_fast
+                  : av > cfg->slow_fp ? cfg->decay_slow
+                  :                     cfg->decay_tail;
         data->vel_y = (int64_t)data->vel_y * d / 1000;
     }
     if (cfg->axis != AXIS_Y) {
-        int32_t d = abs32(data->vel_x) > cfg->fast_fp
-                        ? cfg->decay_fast : cfg->decay_slow;
+        int32_t av = abs32(data->vel_x);
+        int32_t d = av > cfg->fast_fp ? cfg->decay_fast
+                  : av > cfg->slow_fp ? cfg->decay_slow
+                  :                     cfg->decay_tail;
         data->vel_x = (int64_t)data->vel_x * d / 1000;
     }
 
@@ -556,6 +565,8 @@ static struct zmk_input_processor_driver_api scroll_inertia_driver_api = {
         .fast_fp    = DT_INST_PROP(n, fast) << FP_SHIFT,                      \
         .decay_fast = DT_INST_PROP(n, decay_fast),                            \
         .decay_slow = DT_INST_PROP(n, decay_slow),                            \
+        .slow_fp    = DT_INST_PROP(n, slow) << FP_SHIFT,                      \
+        .decay_tail = DT_INST_PROP(n, decay_tail),                            \
         .stop_fp    = DT_INST_PROP(n, stop) << FP_SHIFT,                      \
         .scale      = DT_INST_PROP(n, scale),                                 \
         .scale_div  = DT_INST_PROP(n, scale_div),                             \

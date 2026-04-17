@@ -67,8 +67,18 @@ properties:
     type: int
     default: 850
     description: |
-      Low-speed decay rate (permille per tick).
-      Lower value makes the tail stop more crisply.
+      Mid-speed decay rate (permille per tick).
+  slow:
+    type: int
+    default: 3
+    description: |
+      Velocity boundary (scroll units) between mid and tail decay zones.
+  decay-tail:
+    type: int
+    default: 990
+    description: |
+      Low-speed tail decay rate (permille per tick).
+      Higher value produces a longer, gentler fade-out.
   stop:
     type: int
     default: 1
