@@ -38,6 +38,12 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 /* Consecutive sub-peak samples required to confirm deceleration */
 #define DECEL_CONFIRM_COUNT 3
 
+/* If no event arrives for this many ms, treat the next event as the
+ * start of a brand-new gesture and reset all tracking state.  This
+ * prevents stale velocity / peak / axis-lock from a previous scroll
+ * session from contaminating a new one. */
+#define GESTURE_TIMEOUT_MS 100
+
 /* EMA must drop below this fraction of peak to count as deceleration.
  * 850 / 1000 = 85%.  This prevents minor EMA fluctuations during
  * steady scrolling from falsely triggering inertia. */
@@ -116,6 +122,9 @@ struct scroll_inertia_data {
     /* Inertia state */
     bool inertia_active;
     int64_t inertia_start_time;
+
+    /* Timestamp of the last event (for gesture timeout detection) */
+    int64_t last_event_time;
 
     /* Delayed work items */
     struct k_work_delayable stop_detect_work;
@@ -305,6 +314,22 @@ static int scroll_inertia_handle_event(const struct device *dev,
     if (!is_y && !is_x) {
         return ZMK_INPUT_PROC_CONTINUE;
     }
+
+    /* ────────────────────────────────────────────────────────────────
+     * GESTURE TIMEOUT — reset stale state from a previous session
+     * ──────────────────────────────────────────────────────────────── */
+    int64_t now = k_uptime_get();
+    if (data->last_event_time > 0 &&
+        now - data->last_event_time > GESTURE_TIMEOUT_MS) {
+        if (data->inertia_active) {
+            cancel_inertia(data);
+        } else {
+            reset_gesture(data);
+        }
+        k_work_cancel_delayable(&data->stop_detect_work);
+        LOG_DBG("Gesture timeout: state reset");
+    }
+    data->last_event_time = now;
 
     /* ────────────────────────────────────────────────────────────────
      * AXIS LOCK — determine dominant axis, merge non-dominant into it
