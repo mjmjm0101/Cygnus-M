@@ -327,6 +327,13 @@ static void stop_detect_handler(struct k_work *work) {
         return;
     }
 
+    /* Layer check — don't start inertia if the scroll layer was
+     * deactivated between the last event and this timer firing. */
+    if (cfg->layer >= 0 && !zmk_keymap_layer_active(cfg->layer)) {
+        reset_gesture(data);
+        return;
+    }
+
     /* Respect axis lock — only check dominant axis velocity */
     bool check_y = (data->dominant == AXIS_Y) ||
                    (data->dominant == 0 && cfg->axis != AXIS_X);
@@ -387,6 +394,16 @@ static int scroll_inertia_handle_event(const struct device *dev,
     if (data->suppress_count >= SUPPRESS_SAFETY_LIMIT) {
         LOG_DBG("Suppress safety limit (%d): forced reset",
                 data->suppress_count);
+        need_reset = true;
+    }
+    /* Stale inertia detection: if inertia is active but no events
+     * arrived for more than 2 tick intervals, the ball has stopped
+     * or the layer was briefly toggled.  Either way, the inertia
+     * belongs to a previous interaction and must be cancelled. */
+    if (data->inertia_active && data->last_event_time > 0 &&
+        now - data->last_event_time > cfg->tick_ms * 2) {
+        LOG_DBG("Stale inertia: event gap %lldms",
+                (long long)(now - data->last_event_time));
         need_reset = true;
     }
 
