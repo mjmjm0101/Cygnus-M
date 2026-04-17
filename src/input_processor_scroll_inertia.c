@@ -509,11 +509,21 @@ static int scroll_inertia_handle_event(const struct device *dev,
         bool decelerating = false;
         if (is_y && abs32(data->vel_y) <
                 abs32(data->peak_vel_y) * DECEL_PEAK_RATIO / 1000) {
-            decelerating = true;
+            /* Only count when the raw event direction matches the peak.
+             * During a reversal the EMA lags behind the actual direction,
+             * making the transition look like deceleration from the old
+             * direction's peak. */
+            if (data->peak_vel_y == 0 ||
+                (event->value > 0) == (data->peak_vel_y > 0)) {
+                decelerating = true;
+            }
         }
         if (is_x && abs32(data->vel_x) <
                 abs32(data->peak_vel_x) * DECEL_PEAK_RATIO / 1000) {
-            decelerating = true;
+            if (data->peak_vel_x == 0 ||
+                (event->value > 0) == (data->peak_vel_x > 0)) {
+                decelerating = true;
+            }
         }
 
         if (decelerating) {
