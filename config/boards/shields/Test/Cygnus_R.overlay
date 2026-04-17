@@ -58,6 +58,7 @@
         axis     = <0>;           /* 0=両軸 */
         cancel   = <0>;           /* 0=即キャンセル */
         layer    = <4>;           /* SCROLLレイヤー */
+        lock     = <30>;          /* 累積移動量30で支配軸を決定しロック */
     };
 
     trackball_listener: trackball_listener {

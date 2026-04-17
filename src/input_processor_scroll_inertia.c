@@ -64,6 +64,7 @@ struct scroll_inertia_config {
     int32_t axis;
     int32_t cancel;
     int32_t layer;
+    int32_t lock;          /* axis lock threshold (0=disabled) */
 };
 
 /* ------------------------------------------------------------------ */
@@ -86,6 +87,11 @@ struct scroll_inertia_data {
 
     /* Consecutive EMA-decrease count for deceleration detection */
     int32_t decel_count;
+
+    /* Axis lock state */
+    int32_t sum_abs_x;       /* cumulative |X| for lock decision */
+    int32_t sum_abs_y;       /* cumulative |Y| for lock decision */
+    int32_t dominant;        /* 0=undecided, AXIS_Y=1, AXIS_X=2 */
 
     /* Sub-unit scroll accumulators */
     int32_t accum_x;
@@ -119,6 +125,9 @@ static void reset_gesture(struct scroll_inertia_data *data) {
     data->peak_vel_y = 0;
     data->total_movement = 0;
     data->decel_count = 0;
+    data->sum_abs_x = 0;
+    data->sum_abs_y = 0;
+    data->dominant = 0;
 }
 
 static void cancel_inertia(struct scroll_inertia_data *data) {
@@ -269,6 +278,36 @@ static int scroll_inertia_handle_event(const struct device *dev,
     }
 
     /* ────────────────────────────────────────────────────────────────
+     * AXIS LOCK — determine dominant axis and suppress the other
+     * ──────────────────────────────────────────────────────────────── */
+    if (cfg->lock > 0 && !data->inertia_active && event->value != 0) {
+        if (is_y) data->sum_abs_y += abs32(event->value);
+        if (is_x) data->sum_abs_x += abs32(event->value);
+
+        if (data->dominant == 0 &&
+            data->sum_abs_x + data->sum_abs_y >= cfg->lock) {
+            data->dominant = (data->sum_abs_y >= data->sum_abs_x)
+                                 ? AXIS_Y : AXIS_X;
+            LOG_DBG("Axis locked: %s (sum_y=%d sum_x=%d)",
+                    data->dominant == AXIS_Y ? "Y" : "X",
+                    data->sum_abs_y, data->sum_abs_x);
+        }
+    }
+
+    if (data->dominant != 0) {
+        if ((is_y && data->dominant == AXIS_X) ||
+            (is_x && data->dominant == AXIS_Y)) {
+            event->value = 0;
+            /* Still keep stop-detect alive */
+            if (!data->inertia_active) {
+                k_work_reschedule(&data->stop_detect_work,
+                                  K_MSEC(cfg->release_ms));
+            }
+            return ZMK_INPUT_PROC_CONTINUE;
+        }
+    }
+
+    /* ────────────────────────────────────────────────────────────────
      * INERTIA ACTIVE — decide whether to suppress or cancel
      * ──────────────────────────────────────────────────────────────── */
     if (data->inertia_active) {
@@ -405,6 +444,7 @@ static struct zmk_input_processor_driver_api scroll_inertia_driver_api = {
         .axis       = DT_INST_PROP(n, axis),                                   \
         .cancel     = DT_INST_PROP(n, cancel),                                 \
         .layer      = DT_INST_PROP(n, layer),                                  \
+        .lock       = DT_INST_PROP(n, lock),                                   \
     };                                                                        \
     DEVICE_DT_INST_DEFINE(n, scroll_inertia_init, NULL,                       \
                           &scroll_inertia_data_##n,                           \
