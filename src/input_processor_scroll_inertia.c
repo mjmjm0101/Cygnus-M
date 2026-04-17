@@ -421,22 +421,31 @@ static int scroll_inertia_handle_event(const struct device *dev,
             return ZMK_INPUT_PROC_CONTINUE;
         }
 
-        /* Which axis velocity to compare against? */
         int32_t inertia_vel = is_y ? data->vel_y : data->vel_x;
         int32_t event_vel_fp = (int32_t)event->value << FP_SHIFT;
-        bool same_dir = (event->value > 0) == (inertia_vel > 0);
+        bool same_dir = inertia_vel != 0 &&
+                        (event->value > 0) == (inertia_vel > 0);
 
-        if (same_dir && abs32(event_vel_fp) <= abs32(inertia_vel)) {
-            /* Ball's natural deceleration — suppress this event
-             * so only the inertia decay drives scrolling. */
+        if (same_dir) {
+            /* Same direction — absorb into inertia.
+             *
+             * The ball's natural deceleration may fluctuate above the
+             * inertia velocity (because inertia decays faster than the
+             * physical ball).  Instead of cancelling, bump the inertia
+             * velocity up so it tracks the ball.  The tick handler
+             * continues to decay smoothly, producing seamless output
+             * through the transition from physical scroll to inertia. */
+            if (abs32(event_vel_fp) > abs32(inertia_vel)) {
+                if (is_y) data->vel_y = event_vel_fp;
+                if (is_x) data->vel_x = event_vel_fp;
+            }
             event->value = 0;
             data->suppress_count++;
             return ZMK_INPUT_PROC_CONTINUE;
         }
 
-        /* Reverse direction or faster input — user is re-controlling.
-         * Cancel inertia and fall through to normal tracking. */
-        LOG_DBG("Inertia cancelled by re-input: val=%d inertia_vel=%d",
+        /* Reverse direction — user wants to go the other way. */
+        LOG_DBG("Inertia cancelled by reverse: val=%d inertia_vel=%d",
                 event->value, inertia_vel);
         cancel_inertia(data);
         /* Fall through to tracking below */
