@@ -7,6 +7,7 @@
 
 #define MOUSE 3
 #define SCROLL 4
+#define HSCROLL 5
 
 &mt {
     flavor = "balanced";
@@ -185,7 +186,7 @@
             bindings = <
 &trans  &trans  &trans  &trans  &trans  &trans                    &trans  &trans     &trans     &trans     &trans  &trans
 &trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans  &mkp LCLK  &mkp RCLK  &mkp MCLK  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans  &mo 4      &mo 4      &trans     &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans  &mo 4      &mo 5      &trans     &trans  &trans
 &trans  &trans  &trans  &trans  &to 0   &to 0   &to 0     &to 0   &to 0                                    &trans  &trans
             >;
 
@@ -193,6 +194,17 @@
         };
 
         SCROLL {
+            bindings = <
+&trans  &trans  &trans  &trans  &trans  &trans                    &trans  &trans  &trans     &trans     &trans     &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans  &trans  &trans     &trans     &trans     &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans  &trans  &mkp LCLK  &mkp RCLK  &mkp MCLK  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans                                &trans     &trans
+            >;
+
+            sensor-bindings = <&ROTATE_FAST_INV>;
+        };
+
+        HSCROLL {
             bindings = <
 &trans  &trans  &trans  &trans  &trans  &trans                    &trans  &trans  &trans     &trans     &trans     &trans
 &trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans  &trans  &trans     &trans     &trans     &trans

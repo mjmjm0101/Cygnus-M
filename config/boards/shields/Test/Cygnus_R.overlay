@@ -26,41 +26,50 @@
         reset-timeout-ms = <200>;  /* 動きが止まったらカウントリセット */
     };
 
-    scroll_inertia: scroll_inertia {
+    scroll_inertia_v: scroll_inertia_v {
         compatible = "zmk,input-processor-scroll-inertia";
         #input-processor-cells = <0>;
+        gain     = <300>;
+        blend    = <700>;
+        start    = <5>;
+        move     = <80>;
+        release  = <24>;
+        fast     = <25>;
+        decay-fast = <960>;
+        decay-slow = <985>;
+        slow     = <12>;
+        decay-tail = <995>;
+        stop     = <8>;
+        scale    = <4>;
+        scale-div = <450>;
+        limit    = <600>;
+        span     = <600>;
+        tick     = <8>;
+        axis     = <1>;           /* Y軸のみ (縦スクロール) */
+        layer    = <4>;
+    };
 
-        /* EMAフィルタ (gain+blend=1000) */
-        gain     = <300>;         /* α≈0.3: 新入力の反映度 */
-        blend    = <700>;         /* 直前速度の維持度 */
-
-        /* 慣性開始条件 (scroll_scaler前のフルスケール値域)
-         * pointer_accelの出力値域が不確定なため
-         * まず低めの閾値で動作確認 → 後から引き上げて調整 */
-        start    = <5>;           /* 速度閾値 */
-        move     = <80>;          /* 累積移動量閾値 (微小フリックを除外) */
-        release  = <24>;          /* 離し判定 (ms, 125Hz×3フレーム) */
-
-        /* 3段階減衰: 通常減速 → コースト → フェードアウト */
-        fast     = <25>;          /* 高速/中速の境界 */
-        decay-fast = <960>;       /* 高速域: しっかり減速 (~250ms) */
-        decay-slow = <985>;       /* 中速域: ゆるやかに流れる */
-        slow     = <12>;          /* 中速/低速の境界 */
-        decay-tail = <995>;       /* 低速域: ふわっと消える */
-        stop     = <8>;           /* 最終停止 */
-
-        /* 出力制御 (scroll_scalerと同じ比率を適用) */
-        scale    = <4>;           /* scroll_scaler numerator */
-        scale-div = <450>;        /* scroll_scaler denominator */
-        limit    = <600>;         /* 加速後の最大速度上限 */
-        span     = <600>;         /* 最大持続 (ms) */
-        tick     = <8>;           /* 更新周期 (ms, 125Hzに合わせる) */
-
-        /* 動作 */
-        axis     = <0>;           /* 0=両軸 */
-        cancel   = <0>;           /* 0=即キャンセル */
-        layer    = <4>;           /* SCROLLレイヤー */
-        lock     = <30>;          /* 累積移動量30で支配軸を決定しロック */
+    scroll_inertia_h: scroll_inertia_h {
+        compatible = "zmk,input-processor-scroll-inertia";
+        #input-processor-cells = <0>;
+        gain     = <300>;
+        blend    = <700>;
+        start    = <5>;
+        move     = <80>;
+        release  = <24>;
+        fast     = <25>;
+        decay-fast = <960>;
+        decay-slow = <985>;
+        slow     = <12>;
+        decay-tail = <995>;
+        stop     = <8>;
+        scale    = <4>;
+        scale-div = <450>;
+        limit    = <600>;
+        span     = <600>;
+        tick     = <8>;
+        axis     = <2>;           /* X軸のみ (横スクロール) */
+        layer    = <5>;
     };
 
     trackball_listener: trackball_listener {
@@ -72,13 +81,24 @@
             &zip_temp_layer_threshold 3 10000
         >;
 
-        scroller {
+        scroller_v {
             layers = <4>;
             input-processors = <
                 &pointer_accel
                 &zip_y_scaler (-1) 1
                 &zip_xy_to_scroll_mapper
-                &scroll_inertia
+                &scroll_inertia_v
+                &zip_scroll_scaler 4 450
+            >;
+        };
+
+        scroller_h {
+            layers = <5>;
+            input-processors = <
+                &pointer_accel
+                &zip_y_scaler (-1) 1
+                &zip_xy_to_scroll_mapper
+                &scroll_inertia_h
                 &zip_scroll_scaler 4 450
             >;
         };

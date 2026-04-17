@@ -120,22 +120,9 @@ properties:
     default: 0
     description: |
       Which axes receive inertia.  0 = both, 1 = Y only, 2 = X only.
-  cancel:
-    type: int
-    default: 0
-    description: |
-      Re-input cancel mode.  0 = immediate cancel (recommended).
   layer:
     type: int
     default: -1
     description: |
       Scroll layer index.  When >= 0, inertia stops immediately if this
       layer becomes inactive.  -1 = no layer check.
-  lock:
-    type: int
-    default: 0
-    description: |
-      Axis lock threshold.  After cumulative movement on both axes
-      exceeds this value, the dominant axis is determined and the
-      other axis is suppressed for the rest of the gesture.
-      0 = disabled (both axes pass through freely).
