@@ -165,13 +165,23 @@ static inline int32_t clamp_velocity(int32_t vel, int32_t limit_fp) {
     return vel;
 }
 
-static void reset_gesture(struct scroll_inertia_data *data) {
+/* Reset velocity tracking only — axis lock is preserved so that
+ * direction reversals during the same scrolling session don't
+ * force a re-lock that might pick the wrong axis. */
+static void reset_tracking(struct scroll_inertia_data *data) {
     data->vel_x = 0;
     data->vel_y = 0;
     data->peak_vel_x = 0;
     data->peak_vel_y = 0;
     data->total_movement = 0;
     data->decel_count = 0;
+}
+
+/* Full reset including axis lock — only used on gesture timeout
+ * or suppress safety limit, i.e. when the user genuinely starts
+ * a new scrolling session. */
+static void reset_gesture(struct scroll_inertia_data *data) {
+    reset_tracking(data);
     data->sum_abs_x = 0;
     data->sum_abs_y = 0;
     data->dominant = 0;
@@ -184,7 +194,7 @@ static void cancel_inertia(struct scroll_inertia_data *data) {
     k_work_cancel_delayable(&data->inertia_tick_work);
     data->accum_x = 0;
     data->accum_y = 0;
-    reset_gesture(data);
+    reset_tracking(data);
 }
 
 static void start_inertia(struct scroll_inertia_data *data,
