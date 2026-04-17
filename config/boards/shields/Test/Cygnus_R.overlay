@@ -45,7 +45,7 @@
         fast     = <30>;          /* 高速/低速の境界 */
         decay-fast = <985>;       /* 高速域 */
         decay-slow = <985>;       /* 低速域 (=高速域と同じ: 単一カーブ) */
-        stop     = <8>;           /* 出力頻度が体感できるうちに停止 */
+        stop     = <15>;          /* 出力頻度が体感できるうちに停止 */
 
         /* 出力制御 (scroll_scalerと同じ比率を適用) */
         scale    = <4>;           /* scroll_scaler numerator */
