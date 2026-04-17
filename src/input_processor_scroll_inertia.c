@@ -35,8 +35,13 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #define AXIS_Y    1
 #define AXIS_X    2
 
-/* Consecutive EMA decreases required to confirm deceleration */
-#define DECEL_CONFIRM_COUNT 2
+/* Consecutive sub-peak samples required to confirm deceleration */
+#define DECEL_CONFIRM_COUNT 3
+
+/* EMA must drop below this fraction of peak to count as deceleration.
+ * 900 / 1000 = 90%.  This prevents minor EMA fluctuations during
+ * steady scrolling from falsely triggering inertia. */
+#define DECEL_PEAK_RATIO 900
 
 /* ------------------------------------------------------------------ */
 /* Configuration                                                       */
@@ -378,10 +383,6 @@ static int scroll_inertia_handle_event(const struct device *dev,
         return ZMK_INPUT_PROC_CONTINUE;
     }
 
-    /* Save previous velocity for deceleration detection */
-    int32_t prev_vel_y = data->vel_y;
-    int32_t prev_vel_x = data->vel_x;
-
     /* Update EMA */
     if (is_y) {
         int32_t delta_fp = (int32_t)event->value << FP_SHIFT;
@@ -412,13 +413,19 @@ static int scroll_inertia_handle_event(const struct device *dev,
     if (cfg->axis != AXIS_Y) vel_armed |= (abs32(data->peak_vel_x) >= cfg->start_fp);
     bool armed = vel_armed && data->total_movement >= cfg->move;
 
-    /* ── Deceleration detection ── */
+    /* ── Deceleration detection ──
+     * Compare against PEAK velocity, not just the previous sample.
+     * A minor EMA fluctuation during steady scrolling stays within
+     * ~5% of peak and won't cross the 90% threshold.  A genuine
+     * flick-and-release drops well below 90% within a few events. */
     if (armed) {
         bool decelerating = false;
-        if (is_y && abs32(data->vel_y) < abs32(prev_vel_y)) {
+        if (is_y && abs32(data->vel_y) <
+                abs32(data->peak_vel_y) * DECEL_PEAK_RATIO / 1000) {
             decelerating = true;
         }
-        if (is_x && abs32(data->vel_x) < abs32(prev_vel_x)) {
+        if (is_x && abs32(data->vel_x) <
+                abs32(data->peak_vel_x) * DECEL_PEAK_RATIO / 1000) {
             decelerating = true;
         }
 
