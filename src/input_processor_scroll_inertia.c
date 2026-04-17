@@ -405,12 +405,18 @@ static int scroll_inertia_handle_event(const struct device *dev,
 
         int32_t new_dominant = 0;
         if (data->sum_abs_x + data->sum_abs_y >= cfg->lock) {
-            new_dominant = (data->sum_abs_y >= data->sum_abs_x)
-                               ? AXIS_Y : AXIS_X;
+            /* Require 2:1 ratio to lock.  If neither axis is
+             * clearly dominant, keep both open.  This prevents
+             * locking to X when the user barely grazes the ball
+             * horizontally before scrolling vertically. */
+            if (data->sum_abs_y >= data->sum_abs_x * 2) {
+                new_dominant = AXIS_Y;
+            } else if (data->sum_abs_x >= data->sum_abs_y * 2) {
+                new_dominant = AXIS_X;
+            }
         }
 
         if (new_dominant != 0 && new_dominant != data->dominant) {
-            /* Initial lock or re-lock (dominant axis changed) */
             data->dominant = new_dominant;
             LOG_DBG("Axis locked: %s (sum_y=%d sum_x=%d)",
                     data->dominant == AXIS_Y ? "Y" : "X",
