@@ -92,6 +92,7 @@ struct scroll_inertia_data {
     int32_t sum_abs_x;       /* cumulative |X| for lock decision */
     int32_t sum_abs_y;       /* cumulative |Y| for lock decision */
     int32_t dominant;        /* 0=undecided, AXIS_Y=1, AXIS_X=2 */
+    int32_t pending_other;   /* buffered non-dominant value for merging */
 
     /* Sub-unit scroll accumulators */
     int32_t accum_x;
@@ -112,6 +113,18 @@ struct scroll_inertia_data {
 
 static inline int32_t abs32(int32_t v) { return v < 0 ? -v : v; }
 
+/*
+ * Integer approximation of sqrt(a² + b²).
+ * Uses max(|a|,|b|) + min(|a|,|b|)/2  (max error ~12%).
+ */
+static inline int32_t fast_magnitude(int32_t a, int32_t b) {
+    int32_t aa = abs32(a);
+    int32_t bb = abs32(b);
+    int32_t hi = aa > bb ? aa : bb;
+    int32_t lo = aa > bb ? bb : aa;
+    return hi + (lo >> 1);
+}
+
 static inline int32_t clamp_velocity(int32_t vel, int32_t limit_fp) {
     if (vel > limit_fp)  return limit_fp;
     if (vel < -limit_fp) return -limit_fp;
@@ -128,6 +141,7 @@ static void reset_gesture(struct scroll_inertia_data *data) {
     data->sum_abs_x = 0;
     data->sum_abs_y = 0;
     data->dominant = 0;
+    data->pending_other = 0;
 }
 
 static void cancel_inertia(struct scroll_inertia_data *data) {
@@ -278,7 +292,12 @@ static int scroll_inertia_handle_event(const struct device *dev,
     }
 
     /* ────────────────────────────────────────────────────────────────
-     * AXIS LOCK — determine dominant axis and suppress the other
+     * AXIS LOCK — determine dominant axis, merge non-dominant into it
+     *
+     * Non-dominant axis values are not simply discarded: their
+     * magnitude is folded into the dominant axis via fast_magnitude()
+     * so that a diagonal roll produces the same total scroll as a
+     * straight roll of the same physical distance.
      * ──────────────────────────────────────────────────────────────── */
     if (cfg->lock > 0 && !data->inertia_active && event->value != 0) {
         if (is_y) data->sum_abs_y += abs32(event->value);
@@ -295,15 +314,29 @@ static int scroll_inertia_handle_event(const struct device *dev,
     }
 
     if (data->dominant != 0) {
-        if ((is_y && data->dominant == AXIS_X) ||
-            (is_x && data->dominant == AXIS_Y)) {
+        bool is_non_dominant =
+            (is_y && data->dominant == AXIS_X) ||
+            (is_x && data->dominant == AXIS_Y);
+
+        if (is_non_dominant) {
+            /* Buffer this value; it will be merged when the dominant
+             * axis event arrives (X and Y come as a pair per sample). */
+            data->pending_other = event->value;
             event->value = 0;
-            /* Still keep stop-detect alive */
             if (!data->inertia_active) {
                 k_work_reschedule(&data->stop_detect_work,
                                   K_MSEC(cfg->release_ms));
             }
             return ZMK_INPUT_PROC_CONTINUE;
+        }
+
+        /* This IS the dominant axis — merge the buffered non-dominant
+         * component so diagonal movement preserves total magnitude. */
+        if (data->pending_other != 0) {
+            int32_t sign = event->value >= 0 ? 1 : -1;
+            event->value = sign * fast_magnitude(event->value,
+                                                  data->pending_other);
+            data->pending_other = 0;
         }
     }
 
