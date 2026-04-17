@@ -201,7 +201,7 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans                                &trans     &trans
             >;
 
-            sensor-bindings = <&ROTATE_FAST_INV>;
+            sensor-bindings = <&ROTATE SCRL_DOWN SCRL_UP>;
         };
 
         HSCROLL {
@@ -212,7 +212,7 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans                                &trans     &trans
             >;
 
-            sensor-bindings = <&ROTATE_FAST_INV>;
+            sensor-bindings = <&ROTATE SCRL_DOWN SCRL_UP>;
         };
     };
 };
