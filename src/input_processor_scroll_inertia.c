@@ -184,15 +184,12 @@ static void inertia_tick_handler(struct k_work *work) {
         return;
     }
 
-    /* ── Duration gate (scaled by rotation amount) ── */
-    int32_t move5 = cfg->move * 5;
-    int32_t ratio = data->start_movement * 1000 / (move5 > 0 ? move5 : 1);
-    if (ratio > 1000) ratio = 1000;
-    int32_t effective_span = cfg->span_ms * ratio / 1000;
-    if (effective_span < cfg->tick_ms * 5) {
-        effective_span = cfg->tick_ms * 5;
-    }
-    if (k_uptime_get() - data->inertia_start_time > effective_span) {
+    /* ── Duration gate (safety cap only) ──
+     * The natural exponential decay already gives lighter flicks
+     * shorter inertia (lower initial velocity reaches stop sooner).
+     * The duration gate is only a runaway safety, not a primary
+     * length control. */
+    if (k_uptime_get() - data->inertia_start_time > cfg->span_ms) {
         cancel_inertia(data);
         return;
     }

@@ -39,11 +39,11 @@
         decay-slow = <993>;
         slow     = <0>;
         decay-tail = <993>;
-        stop     = <10>;          /* 出力が滑らかなうちに停止 */
+        stop     = <2>;           /* 自然減衰でゼロまで到達 */
         scale    = <4>;
         scale-div = <450>;
         limit    = <600>;
-        span     = <3000>;
+        span     = <6000>;
         tick     = <8>;
         axis     = <1>;
         layer    = <4>;
@@ -66,7 +66,7 @@
         scale    = <4>;
         scale-div = <450>;
         limit    = <600>;
-        span     = <3000>;
+        span     = <6000>;
         tick     = <8>;
         axis     = <2>;
         layer    = <5>;
