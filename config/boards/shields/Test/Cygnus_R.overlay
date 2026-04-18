@@ -84,7 +84,6 @@
         scroller_v {
             layers = <4>;
             input-processors = <
-                &pointer_accel
                 &zip_y_scaler (-1) 1
                 &zip_xy_to_scroll_mapper
                 &scroll_inertia_v
@@ -95,7 +94,6 @@
         scroller_h {
             layers = <5>;
             input-processors = <
-                &pointer_accel
                 &zip_y_scaler (-1) 1
                 &zip_xy_to_scroll_mapper
                 &scroll_inertia_h
