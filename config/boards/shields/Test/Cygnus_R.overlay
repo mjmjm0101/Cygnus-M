@@ -31,8 +31,8 @@
         #input-processor-cells = <0>;
         gain     = <300>;
         blend    = <700>;
-        start    = <10>;          /* 発動に必要な速度 (5→10) */
-        move     = <150>;         /* 発動に必要な移動量 (80→150) */
+        start    = <30>;          /* 発動に必要な速度 (10→30) */
+        move     = <450>;         /* 発動に必要な移動量 (150→450) */
         release  = <24>;
         fast     = <0>;            /* 単一カーブ: 閾値0で全域同一 */
         decay-fast = <993>;       /* iOS実測値ベース (≒994) */
@@ -54,8 +54,8 @@
         #input-processor-cells = <0>;
         gain     = <300>;
         blend    = <700>;
-        start    = <10>;
-        move     = <150>;
+        start    = <30>;
+        move     = <450>;
         release  = <24>;
         fast     = <0>;
         decay-fast = <985>;
