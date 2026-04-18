@@ -39,7 +39,7 @@
         decay-slow = <990>;
         slow     = <0>;
         decay-tail = <990>;
-        stop     = <6>;           /* 出力が滑らかなうちに停止 */
+        stop     = <7>;           /* 出力が滑らかなうちに停止 */
         scale    = <4>;
         scale-div = <675>;
         limit    = <600>;
@@ -62,7 +62,7 @@
         decay-slow = <990>;
         slow     = <0>;
         decay-tail = <990>;
-        stop     = <6>;
+        stop     = <7>;
         scale    = <4>;
         scale-div = <675>;
         limit    = <600>;
