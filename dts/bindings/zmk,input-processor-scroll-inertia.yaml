@@ -33,12 +33,12 @@ properties:
   # ── Inertia start conditions ─────────────────────────────
   start:
     type: int
-    default: 5
+    default: 75
     description: |
       Minimum EMA velocity (scroll units) to trigger inertia.
   move:
     type: int
-    default: 30
+    default: 135
     description: |
       Minimum cumulative absolute movement (scroll units) within a
       gesture required to trigger inertia.  Prevents noise-triggered
@@ -51,28 +51,32 @@ properties:
       released.  24 ms ≈ 3 frames at 125 Hz.
 
   # ── Decay ────────────────────────────────────────────────
+  # Defaults give a single iOS-like exponential curve (all rates 990,
+  # boundaries at 0).  Set fast/slow > 0 and use different decay rates
+  # to enable multi-stage behaviour.
   fast:
     type: int
-    default: 8
+    default: 0
     description: |
       Velocity boundary (scroll units) between fast and slow decay
-      zones.
+      zones.  0 disables the fast zone (single curve mode).
   decay-fast:
     type: int
-    default: 950
+    default: 990
     description: |
       High-speed decay rate (permille per tick).
-      950 = multiply by 0.95 each tick.
+      990 = multiply by 0.99 each tick.
   decay-slow:
     type: int
-    default: 850
+    default: 990
     description: |
       Mid-speed decay rate (permille per tick).
   slow:
     type: int
-    default: 3
+    default: 0
     description: |
       Velocity boundary (scroll units) between mid and tail decay zones.
+      0 disables the tail zone.
   decay-tail:
     type: int
     default: 990
@@ -81,9 +85,11 @@ properties:
       Higher value produces a longer, gentler fade-out.
   stop:
     type: int
-    default: 1
+    default: 7
     description: |
       Velocity (scroll units) below which inertia stops immediately.
+      Tune this together with scale/scale-div: lower stop extends the
+      tail but produces sparser (jerkier) discrete output near zero.
 
   # ── Output ───────────────────────────────────────────────
   scale:
@@ -100,14 +106,15 @@ properties:
       Output scale denominator.
   limit:
     type: int
-    default: 20
+    default: 600
     description: |
       Maximum velocity cap (scroll units).  Prevents runaway scrolling.
   span:
     type: int
-    default: 800
+    default: 6000
     description: |
-      Maximum inertia duration in milliseconds.
+      Maximum inertia duration in milliseconds.  Acts as a runaway
+      safety cap; natural decay typically terminates earlier.
   tick:
     type: int
     default: 8
