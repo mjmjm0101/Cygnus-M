@@ -156,3 +156,16 @@ properties:
     description: |
       Scroll layer index.  When >= 0, inertia stops immediately if this
       layer becomes inactive.  -1 = no layer check.
+  swap-mod:
+    type: int
+    default: 0
+    description: |
+      Modifier bitmask that, while held, swaps the scroll output axis
+      (vertical ↔ horizontal).  Set 0 to disable.
+
+      Use the MOD_* constants from <dt-bindings/zmk/modifiers.h>:
+        MOD_LCTL=0x01  MOD_LSFT=0x02  MOD_LALT=0x04  MOD_LGUI=0x08
+        MOD_RCTL=0x10  MOD_RSFT=0x20  MOD_RALT=0x40  MOD_RGUI=0x80
+
+      Example: swap-mod = <(MOD_LSFT|MOD_RSFT)>;
+      → either Shift held inverts the scroll axis.

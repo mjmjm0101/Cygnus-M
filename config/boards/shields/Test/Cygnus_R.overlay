@@ -2,6 +2,7 @@
 #include <input/processors.dtsi>
 #include <behaviors/input_gestures_accel.dtsi>
 #include <dt-bindings/input/input-event-codes.h>
+#include <dt-bindings/zmk/modifiers.h>
 
 &default_transform {
     col-offset = <7>;
@@ -47,6 +48,7 @@
         tick     = <8>;
         axis     = <1>;
         layer    = <4>;
+        swap-mod = <(MOD_LSFT|MOD_RSFT)>;  /* Shiftで縦↔横入れ替え */
     };
 
     scroll_inertia_h: scroll_inertia_h {
@@ -70,6 +72,7 @@
         tick     = <8>;
         axis     = <2>;
         layer    = <5>;
+        swap-mod = <(MOD_LSFT|MOD_RSFT)>;
     };
 
     trackball_listener: trackball_listener {

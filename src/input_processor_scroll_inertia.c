@@ -72,6 +72,7 @@ struct scroll_inertia_config {
 
     int32_t axis;
     int32_t layer;
+    int32_t swap_mod;       /* modifier bitmask that swaps output axis (0=disabled) */
 };
 
 /* ------------------------------------------------------------------ */
@@ -121,6 +122,12 @@ static inline int32_t fast_magnitude(int32_t a, int32_t b) {
     int32_t hi = aa > bb ? aa : bb;
     int32_t lo = aa > bb ? bb : aa;
     return hi + (lo >> 1);
+}
+
+/* Returns true if any of the configured modifier bits are currently held. */
+static inline bool swap_active(const struct scroll_inertia_config *cfg) {
+    if (cfg->swap_mod == 0) return false;
+    return (zmk_hid_get_explicit_mods() & cfg->swap_mod) != 0;
 }
 
 static inline int32_t clamp_velocity(int32_t vel, int32_t limit_fp) {
@@ -233,8 +240,14 @@ static void inertia_tick_handler(struct k_work *work) {
     }
 
     if (emit_x != 0 || emit_y != 0) {
+        int16_t out_x = emit_x;
+        int16_t out_y = emit_y;
+        if (swap_active(cfg)) {
+            out_x = emit_y;
+            out_y = emit_x;
+        }
         zmk_hid_mouse_movement_set(0, 0);
-        zmk_hid_mouse_scroll_set(emit_x, emit_y);
+        zmk_hid_mouse_scroll_set(out_x, out_y);
         zmk_endpoints_send_mouse_report();
         zmk_hid_mouse_scroll_set(0, 0);
     }
@@ -482,6 +495,12 @@ static int scroll_inertia_handle_event(const struct device *dev,
     data->suppress_count = 0;
     k_work_reschedule(&data->stop_detect_work, K_MSEC(cfg->release_ms));
 
+    /* Swap output axis if the configured modifier is held */
+    if (swap_active(cfg)) {
+        if (event->code == INPUT_REL_WHEEL)       event->code = INPUT_REL_HWHEEL;
+        else if (event->code == INPUT_REL_HWHEEL) event->code = INPUT_REL_WHEEL;
+    }
+
     return ZMK_INPUT_PROC_CONTINUE;
 }
 
@@ -522,6 +541,7 @@ static struct zmk_input_processor_driver_api scroll_inertia_driver_api = {
         .tick_ms    = DT_INST_PROP(n, tick),                                   \
         .axis       = DT_INST_PROP(n, axis),                                   \
         .layer      = DT_INST_PROP(n, layer),                                  \
+        .swap_mod   = DT_INST_PROP(n, swap_mod),                              \
     };                                                                        \
     DEVICE_DT_INST_DEFINE(n, scroll_inertia_init, NULL,                       \
                           &scroll_inertia_data_##n,                           \
