@@ -3,6 +3,25 @@ description: |
   Tracks scroll velocity and generates decaying scroll events after the
   trackball stops moving.  Designed for BLE keyboards with integer-only math.
 
+  Recommended placement: BEFORE zip_scroll_scaler in the input-processors
+  chain, with scale / scale-div set to match the scaler's two arguments.
+
+    Example chain:
+      &zip_y_scaler (-1) 1
+      &zip_xy_to_scroll_mapper
+      &scroll_inertia          ← place here
+      &zip_scroll_scaler 4 675
+
+    Matching binding:
+      scale     = <4>;
+      scale-div = <675>;
+
+  This placement gives the processor higher-precision velocity tracking
+  (pre-scaler values are larger) and avoids the value=0 events the scaler
+  emits while accumulating its remainder.  The scale/scale-div mirror of
+  the scaler's ratio keeps the inertia output aligned with active scroll
+  output, so the transition from physical scroll to inertia is seamless.
+
 compatible: "zmk,input-processor-scroll-inertia"
 
 properties:
@@ -98,12 +117,16 @@ properties:
     description: |
       Output scale numerator.
       Inertia scroll output = velocity × scale / scale-div per tick.
-      When placed before a scaler, match that scaler's ratio.
+
+      Recommended: place this processor before zip_scroll_scaler and set
+      scale / scale-div to the scaler's two arguments.  The default 1:1
+      (1000/1000) is only correct if the processor sits at the END of the
+      chain (after any scaler), which is not the recommended placement.
   scale-div:
     type: int
     default: 1000
     description: |
-      Output scale denominator.
+      Output scale denominator.  See scale.
   limit:
     type: int
     default: 600
