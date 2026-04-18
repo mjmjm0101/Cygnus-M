@@ -31,7 +31,7 @@
         #input-processor-cells = <0>;
         gain     = <300>;
         blend    = <700>;
-        start    = <90>;          /* 発動に必要な速度 (30→90) */
+        start    = <60>;          /* 発動に必要な速度 (90→60) */
         move     = <135>;         /* 発動に必要な移動量 (270→135) */
         release  = <24>;
         fast     = <0>;            /* 単一カーブ: 閾値0で全域同一 */
@@ -54,7 +54,7 @@
         #input-processor-cells = <0>;
         gain     = <300>;
         blend    = <700>;
-        start    = <90>;
+        start    = <60>;
         move     = <135>;
         release  = <24>;
         fast     = <0>;
