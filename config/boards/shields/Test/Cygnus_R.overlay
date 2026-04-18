@@ -36,7 +36,7 @@
         release  = <24>;
         fast     = <40>;          /* 高速域を広く (25→40) */
         decay-fast = <965>;       /* 高速域を短く (980→965) */
-        decay-slow = <993>;
+        decay-slow = <980>;
         slow     = <18>;          /* tail域を広く (12→18) */
         decay-tail = <998>;       /* tailをさらにゆるく (997→998) */
         stop     = <4>;           /* tail域をもっと長く走らせる (8→4) */
@@ -59,7 +59,7 @@
         release  = <24>;
         fast     = <40>;
         decay-fast = <965>;
-        decay-slow = <993>;
+        decay-slow = <980>;
         slow     = <18>;
         decay-tail = <998>;
         stop     = <4>;
