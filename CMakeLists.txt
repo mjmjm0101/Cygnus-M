@@ -1,4 +1,2 @@
 zephyr_library_sources_ifdef(CONFIG_ZMK_BEHAVIOR_SENSOR_ROTATE_DIR_LOCK
     src/behavior_sensor_rotate_dir_lock.c)
-zephyr_library_sources_ifdef(CONFIG_ZMK_INPUT_PROCESSOR_SCROLL_INERTIA
-    src/input_processor_scroll_inertia.c)

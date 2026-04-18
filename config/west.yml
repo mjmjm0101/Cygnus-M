@@ -12,6 +12,8 @@ manifest:
       url-base: https://github.com/rain-bbb
     - name: yamaryu211
       url-base: https://github.com/yamaryu211
+    - name: mjmjm0101
+      url-base: https://github.com/mjmjm0101
 
   projects:
     - name: zmk
@@ -32,6 +34,9 @@ manifest:
     - name: zmk-input-processor-temp-layer-threshold
       remote: yamaryu211
       revision: main
+    - name: zmk-input-processor-scroll-inertia
+      remote: mjmjm0101
+      revision: dev
 
   self:
     path: config
