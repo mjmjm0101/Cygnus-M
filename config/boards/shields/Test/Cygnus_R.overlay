@@ -58,11 +58,11 @@
         move     = <135>;
         release  = <24>;
         fast     = <0>;
-        decay-fast = <985>;
-        decay-slow = <985>;
+        decay-fast = <990>;
+        decay-slow = <990>;
         slow     = <0>;
-        decay-tail = <993>;
-        stop     = <10>;
+        decay-tail = <990>;
+        stop     = <2>;
         scale    = <4>;
         scale-div = <675>;
         limit    = <600>;
