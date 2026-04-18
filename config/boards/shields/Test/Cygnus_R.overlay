@@ -41,7 +41,7 @@
         decay-tail = <993>;
         stop     = <2>;           /* 自然減衰でゼロまで到達 */
         scale    = <4>;
-        scale-div = <450>;
+        scale-div = <1350>;
         limit    = <600>;
         span     = <6000>;
         tick     = <8>;
@@ -64,7 +64,7 @@
         decay-tail = <993>;
         stop     = <10>;
         scale    = <4>;
-        scale-div = <450>;
+        scale-div = <1350>;
         limit    = <600>;
         span     = <6000>;
         tick     = <8>;
@@ -87,7 +87,7 @@
                 &zip_y_scaler (-1) 1
                 &zip_xy_to_scroll_mapper
                 &scroll_inertia_v
-                &zip_scroll_scaler 4 450
+                &zip_scroll_scaler 4 1350
             >;
         };
 
@@ -97,7 +97,7 @@
                 &zip_y_scaler (-1) 1
                 &zip_xy_to_scroll_mapper
                 &scroll_inertia_h
-                &zip_scroll_scaler 4 450
+                &zip_scroll_scaler 4 1350
             >;
         };
     };
