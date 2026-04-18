@@ -107,8 +107,24 @@ properties:
     default: 7
     description: |
       Velocity (scroll units) below which inertia stops immediately.
-      Tune this together with scale/scale-div: lower stop extends the
-      tail but produces sparser (jerkier) discrete output near zero.
+
+      The perceived smoothness at cutoff depends on the *combination* of
+      stop, scale, and scale-div, not on stop alone:
+
+        output frequency at cutoff (Hz) ≈ stop × scale × 125 / scale-div
+
+      Below ~5 Hz the discrete HID scroll units feel jerky.  Tune so the
+      output frequency at cutoff stays above this threshold:
+
+        scale/scale-div ratio | recommended stop (for ~5 Hz cutoff)
+        ─────────────────────────────────────────────────
+        1:1   (1000/1000)    | stop ≈ 1
+        1:10  (100/1000)     | stop ≈ 10
+        4:675 (recommended)  | stop ≈ 7
+        1:100 (10/1000)      | stop ≈ 100
+
+      Lower stop extends the tail but eventually produces sparse,
+      perceptibly discrete output before the actual stop.
 
   # ── Output ───────────────────────────────────────────────
   scale:
