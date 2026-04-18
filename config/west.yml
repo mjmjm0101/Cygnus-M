@@ -36,7 +36,7 @@ manifest:
       revision: main
     - name: zmk-input-processor-scroll-inertia
       remote: mjmjm0101
-      revision: dev
+      revision: v0.1.0
 
   self:
     path: config
