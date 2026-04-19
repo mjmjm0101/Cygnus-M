@@ -52,7 +52,7 @@
         unlock-mod = <MOD_LALT>;           /* 左Altで両軸フリー (2Dスクロール) */
     };
 
-    scroll_inertia_h: scroll_inertia_free {
+    scroll_inertia_free: scroll_inertia_free {
         compatible = "zmk,input-processor-scroll-inertia";
         #input-processor-cells = <0>;
         gain     = <300>;
