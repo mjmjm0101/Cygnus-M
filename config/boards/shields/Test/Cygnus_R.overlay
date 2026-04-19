@@ -38,9 +38,9 @@
         fast     = <0>;
         decay-fast = <990>;
         decay-slow = <990>;
-        slow     = <8>;           /* 低速区間に切替 */
-        decay-tail = <995>;       /* 終端を緩やかに */
-        stop     = <4>;           /* 終端ガタつき抑制のため低めに */
+        slow     = <12>;          /* 低速区間に切替 */
+        decay-tail = <997>;       /* 終端を更に緩やかに */
+        stop     = <7>;           /* 離散化が目立たない閾値で停止 */
         scale    = <4>;
         scale-div = <675>;
         limit    = <600>;
@@ -63,9 +63,9 @@
         fast     = <0>;
         decay-fast = <990>;
         decay-slow = <990>;
-        slow     = <8>;
-        decay-tail = <995>;
-        stop     = <4>;
+        slow     = <12>;
+        decay-tail = <997>;
+        stop     = <7>;
         scale    = <4>;
         scale-div = <675>;
         limit    = <600>;
