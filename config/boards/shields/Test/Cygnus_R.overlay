@@ -2,6 +2,7 @@
 #include <input/processors.dtsi>
 #include <behaviors/input_gestures_accel.dtsi>
 #include <dt-bindings/input/input-event-codes.h>
+#include <dt-bindings/zmk/modifiers.h>
 
 &default_transform {
     col-offset = <7>;
@@ -26,6 +27,56 @@
         reset-timeout-ms = <200>;  /* 動きが止まったらカウントリセット */
     };
 
+    scroll_inertia_v: scroll_inertia_v {
+        compatible = "zmk,input-processor-scroll-inertia";
+        #input-processor-cells = <0>;
+        gain     = <300>;
+        blend    = <700>;
+        start    = <65>;          /* 発動に必要な速度 (60→75) */
+        move     = <85>;         /* 発動に必要な移動量 (270→135) */
+        release  = <24>;
+        fast     = <0>;
+        decay-fast = <990>;
+        decay-slow = <990>;
+        slow     = <12>;          /* 低速区間に切替 */
+        decay-tail = <997>;       /* 終端を更に緩やかに */
+        stop     = <7>;           /* 離散化が目立たない閾値で停止 */
+        scale    = <4>;
+        scale-div = <675>;
+        limit    = <600>;
+        span     = <6000>;
+        tick     = <8>;
+        axis     = <1>;
+        layer    = <4>;
+        swap-mod = <(MOD_LSFT|MOD_RSFT)>;  /* Shiftで縦↔横入れ替え */
+        unlock-mod = <MOD_LALT>;           /* 左Altで両軸フリー (2Dスクロール) */
+    };
+
+    scroll_inertia_h: scroll_inertia_h {
+        compatible = "zmk,input-processor-scroll-inertia";
+        #input-processor-cells = <0>;
+        gain     = <300>;
+        blend    = <700>;
+        start    = <75>;
+        move     = <85>;
+        release  = <24>;
+        fast     = <0>;
+        decay-fast = <990>;
+        decay-slow = <990>;
+        slow     = <12>;
+        decay-tail = <997>;
+        stop     = <7>;
+        scale    = <4>;
+        scale-div = <675>;
+        limit    = <600>;
+        span     = <6000>;
+        tick     = <8>;
+        axis     = <2>;
+        layer    = <5>;
+        swap-mod = <(MOD_LSFT|MOD_RSFT)>;
+        unlock-mod = <MOD_LALT>;
+    };
+
     trackball_listener: trackball_listener {
         compatible = "zmk,input-listener";
         device = <&trackball>;
@@ -35,13 +86,23 @@
             &zip_temp_layer_threshold 3 10000
         >;
 
-        scroller {
+        scroller_v {
             layers = <4>;
             input-processors = <
-                &pointer_accel
                 &zip_y_scaler (-1) 1
                 &zip_xy_to_scroll_mapper
-                &zip_scroll_scaler 4 450
+                &scroll_inertia_v
+                &zip_scroll_scaler 4 675
+            >;
+        };
+
+        scroller_h {
+            layers = <5>;
+            input-processors = <
+                &zip_y_scaler (-1) 1
+                &zip_xy_to_scroll_mapper
+                &scroll_inertia_h
+                &zip_scroll_scaler 4 675
             >;
         };
     };
