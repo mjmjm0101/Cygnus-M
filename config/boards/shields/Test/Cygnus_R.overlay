@@ -52,7 +52,7 @@
         unlock-mod = <MOD_LALT>;           /* 左Altで両軸フリー (2Dスクロール) */
     };
 
-    scroll_inertia_h: scroll_inertia_h {
+    scroll_inertia_h: scroll_inertia_free {
         compatible = "zmk,input-processor-scroll-inertia";
         #input-processor-cells = <0>;
         gain     = <300>;
@@ -71,7 +71,7 @@
         limit    = <600>;
         span     = <6000>;
         tick     = <8>;
-        axis     = <2>;
+        axis     = <0>;
         layer    = <5>;
         swap-mod = <(MOD_LSFT|MOD_RSFT)>;
         unlock-mod = <MOD_LALT>;
@@ -101,7 +101,7 @@
             input-processors = <
                 &zip_y_scaler (-1) 1
                 &zip_xy_to_scroll_mapper
-                &scroll_inertia_h
+                &scroll_inertia_free
                 &zip_scroll_scaler 4 675
             >;
         };
