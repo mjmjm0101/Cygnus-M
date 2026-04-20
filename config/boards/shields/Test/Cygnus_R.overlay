@@ -32,10 +32,10 @@
         #input-processor-cells = <0>;
         gain     = <300>;
         blend    = <700>;
-        /* start    = <65>;          発動に必要な速度 (60→75) */
-        /* move     = <85>;         発動に必要な移動量 (270→135) */
-        start    = <25>;          /* 発動に必要な速度 (60→75) */
-        move     = <55>;         /* 発動に必要な移動量 (270→135) */
+        /* start    = <65>;          発動に必要な速度 */
+        /* move     = <85>;         発動に必要な移動量 */
+        start    = <25>;          /* 発動に必要な速度 */
+        move     = <55>;         /* 発動に必要な移動量 */
         release  = <24>;
         fast     = <0>;
         decay-fast = <990>;
@@ -50,7 +50,7 @@
         tick     = <8>;
         axis     = <1>;
         layer    = <4>;
-        friction = <25>;
+        friction = <35>;
         swap-mod = <(MOD_LSFT|MOD_RSFT)>;  /* Shiftで縦↔横入れ替え */
         unlock-mod = <MOD_LALT>;           /* 左Altで両軸フリー (2Dスクロール) */
     };
@@ -60,10 +60,10 @@
         #input-processor-cells = <0>;
         gain     = <300>;
         blend    = <700>;
-        /* start    = <65>;          発動に必要な速度 (60→75) */
-        /* move     = <85>;         発動に必要な移動量 (270→135) */
-        start    = <15>;          /* 発動に必要な速度 (60→75) */
-        move     = <35>;         /* 発動に必要な移動量 (270→135) */
+        /* start    = <65>;          発動に必要な速度 */
+        /* move     = <85>;         発動に必要な移動量*/
+        start    = <25>;          /* 発動に必要な速度 */
+        move     = <55>;         /* 発動に必要な移動量 */
         release  = <24>;
         fast     = <0>;
         decay-fast = <990>;
@@ -78,7 +78,7 @@
         tick     = <8>;
         axis     = <0>;
         layer    = <5>;
-        friction = <25>;
+        friction = <35>;
         swap-mod = <(MOD_LSFT|MOD_RSFT)>;
         unlock-mod = <MOD_LALT>;
     };
