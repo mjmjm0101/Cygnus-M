@@ -34,7 +34,7 @@
         blend    = <700>;
         /* start    = <65>;          発動に必要な速度 */
         /* move     = <85>;         発動に必要な移動量 */
-        start    = <60>;          /* 発動に必要な速度 */
+        start    = <45>;          /* 発動に必要な速度 */
         move     = <100>;         /* 発動に必要な移動量 */
         release  = <24>;
         fast     = <0>;
@@ -42,7 +42,7 @@
         decay-slow = <990>;
         slow     = <0>;          /* 低速区間に切替 */
         decay-tail = <990>;       /* 終端を更に緩やかに */
-        stop     = <7>;           /* 離散化が目立たない閾値で停止 */
+        stop     = <4>;           /* 離散化が目立たない閾値で停止 */
         scale    = <4>;
         scale-div = <675>;
         limit    = <600>;
@@ -50,7 +50,7 @@
         tick     = <8>;
         axis     = <1>;
         layer    = <4>;
-        friction = <35>;
+        friction = <18>;
         swap-mod = <(MOD_LSFT|MOD_RSFT)>;  /* Shiftで縦↔横入れ替え */
         unlock-mod = <MOD_LALT>;           /* 左Altで両軸フリー (2Dスクロール) */
     };
@@ -62,7 +62,7 @@
         blend    = <700>;
         /* start    = <65>;          発動に必要な速度 */
         /* move     = <85>;         発動に必要な移動量*/
-        start    = <60>;          /* 発動に必要な速度 */
+        start    = <45>;          /* 発動に必要な速度 */
         move     = <100>;         /* 発動に必要な移動量 */
         release  = <24>;
         fast     = <0>;
@@ -78,7 +78,7 @@
         tick     = <8>;
         axis     = <0>;
         layer    = <5>;
-        friction = <35>;
+        friction = <18>;
         swap-mod = <(MOD_LSFT|MOD_RSFT)>;
         unlock-mod = <MOD_LALT>;
     };
