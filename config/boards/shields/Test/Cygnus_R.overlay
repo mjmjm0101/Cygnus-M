@@ -34,7 +34,7 @@
         blend    = <700>;
         /* start    = <65>;          発動に必要な速度 */
         /* move     = <85>;         発動に必要な移動量 */
-        start    = <45>;          /* 発動に必要な速度 */
+        start    = <90>;          /* 発動に必要な速度 (250Hz化で要倍増) */
         move     = <100>;         /* 発動に必要な移動量 */
         release  = <24>;
         fast     = <0>;
@@ -62,7 +62,7 @@
         blend    = <700>;
         /* start    = <65>;          発動に必要な速度 */
         /* move     = <85>;         発動に必要な移動量*/
-        start    = <45>;          /* 発動に必要な速度 */
+        start    = <90>;          /* 発動に必要な速度 (250Hz化で要倍増) */
         move     = <100>;         /* 発動に必要な移動量 */
         release  = <24>;
         fast     = <0>;
@@ -116,11 +116,11 @@
 
 &pointer_accel {
     input-type = <INPUT_EV_REL>;
-    min-factor = <80>;             /* 開始速度: 低速をさらに抑える */
+    min-factor = <27>;             /* 開始速度: 初速を1/3に抑制 */
     max-factor = <500>;            /* 最大速度: 加速の勢いを緩める */
     speed-threshold = <333>;       /* 加速開始点 */
     speed-max = <3000>;            /* この速度で最大に到達 */
-    acceleration-exponent = <1>;   /* 線形 */
+    acceleration-exponent = <2>;   /* 二次曲線 (低速は緩く、高速で伸びる) */
 };
 
 &xiao_serial { status = "disabled"; };
