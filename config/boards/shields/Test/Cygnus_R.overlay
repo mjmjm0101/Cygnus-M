@@ -42,7 +42,7 @@
         decay-slow = <995>;
         slow     = <0>;          /* 低速区間に切替 */
         decay-tail = <995>;       /* 終端を更に緩やかに */
-        stop     = <7>;           /* 離散化が目立たない閾値で停止 */
+        stop     = <6>;           /* 離散化が目立たない閾値で停止 */
         scale    = <4>;
         scale-div = <675>;
         limit    = <600>;
@@ -74,7 +74,7 @@
         decay-slow = <995>;
         slow     = <0>;          /* 低速区間に切替 */
         decay-tail = <995>;       /* 終端を更に緩やかに */
-        stop     = <7>;
+        stop     = <6>;
         scale    = <4>;
         scale-div = <675>;
         limit    = <600>;
