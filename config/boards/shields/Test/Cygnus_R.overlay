@@ -54,7 +54,7 @@
         peak-decay = <995>;
         axis     = <1>;
         layer    = <4>;
-        friction = <18>;
+        friction = <13>;
         swap-mod = <(MOD_LSFT|MOD_RSFT)>;  /* Shiftで縦↔横入れ替え */
         unlock-mod = <MOD_LALT>;           /* 左Altで両軸フリー (2Dスクロール) */
     };
@@ -86,7 +86,7 @@
         peak-decay = <995>;
         axis     = <0>;
         layer    = <5>;
-        friction = <18>;
+        friction = <13>;
         swap-mod = <(MOD_LSFT|MOD_RSFT)>;
         unlock-mod = <MOD_LALT>;
     };
