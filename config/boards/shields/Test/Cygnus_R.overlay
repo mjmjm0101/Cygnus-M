@@ -51,7 +51,7 @@
         min-events = <20>;
         decel-samples = <6>;
         suppress-limit = <100>;
-        peek-decay = <995>;
+        peak-decay = <995>;
         axis     = <1>;
         layer    = <4>;
         friction = <18>;
@@ -83,7 +83,7 @@
         min-events = <20>;
         decel-samples = <6>;
         suppress-limit = <100>;
-        peek-decay = <995>;
+        peak-decay = <995>;
         axis     = <0>;
         layer    = <5>;
         friction = <18>;
