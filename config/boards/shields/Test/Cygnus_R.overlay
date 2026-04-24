@@ -50,7 +50,7 @@
         tick     = <4>;
         min-events = <20>;
         decel-samples = <6>;
-        suppless-limit = <100>;
+        suppress-limit = <100>;
         peek-decay = <995>;
         axis     = <1>;
         layer    = <4>;
@@ -82,7 +82,7 @@
         tick     = <4>;
         min-events = <20>;
         decel-samples = <6>;
-        suppless-limit = <100>;
+        suppress-limit = <100>;
         peek-decay = <995>;
         axis     = <0>;
         layer    = <5>;
