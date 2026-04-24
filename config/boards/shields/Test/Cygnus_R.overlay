@@ -42,7 +42,7 @@
         decay-slow = <995>;
         slow     = <0>;          /* 低速区間に切替 */
         decay-tail = <995>;       /* 終端を更に緩やかに */
-        stop     = <6>;           /* 離散化が目立たない閾値で停止 */
+        stop     = <3>;           /* 離散化が目立たない閾値で停止 */
         scale    = <4>;
         scale-div = <675>;
         limit    = <600>;
@@ -54,7 +54,7 @@
         peak-decay = <995>;
         axis     = <1>;
         layer    = <4>;
-        friction = <13>;
+        friction = <10>;
         swap-mod = <(MOD_LSFT|MOD_RSFT)>;  /* Shiftで縦↔横入れ替え */
         unlock-mod = <MOD_LALT>;           /* 左Altで両軸フリー (2Dスクロール) */
     };
@@ -74,7 +74,7 @@
         decay-slow = <995>;
         slow     = <0>;          /* 低速区間に切替 */
         decay-tail = <995>;       /* 終端を更に緩やかに */
-        stop     = <6>;
+        stop     = <3>;
         scale    = <4>;
         scale-div = <675>;
         limit    = <600>;
@@ -86,7 +86,7 @@
         peak-decay = <995>;
         axis     = <0>;
         layer    = <5>;
-        friction = <13>;
+        friction = <10>;
         swap-mod = <(MOD_LSFT|MOD_RSFT)>;
         unlock-mod = <MOD_LALT>;
     };
