@@ -38,10 +38,10 @@
         move     = <85>;         /* 発動に必要な移動量 */
         release  = <24>;
         fast     = <0>;
-        decay-fast = <1000>;
-        decay-slow = <1000>;
+        decay-fast = <995>;
+        decay-slow = <995>;
         slow     = <0>;          /* 低速区間に切替 */
-        decay-tail = <1000>;       /* 終端を更に緩やかに */
+        decay-tail = <995>;       /* 終端を更に緩やかに */
         stop     = <5>;           /* 離散化が目立たない閾値で停止 */
         scale    = <4>;
         scale-div = <675>;
@@ -51,7 +51,7 @@
         min-events = <20>;
         decel-samples = <6>;
         suppress-limit = <100>;
-        peak-decay = <1000>;
+        peak-decay = <995>;
         axis     = <1>;
         layer    = <4>;
         friction = <10>;
@@ -70,10 +70,10 @@
         move     = <85>;         /* 発動に必要な移動量 */
         release  = <24>;
         fast     = <0>;
-        decay-fast = <1000>;
-        decay-slow = <1000>;
+        decay-fast = <995>;
+        decay-slow = <995>;
         slow     = <0>;          /* 低速区間に切替 */
-        decay-tail = <1000>;       /* 終端を更に緩やかに */
+        decay-tail = <995>;       /* 終端を更に緩やかに */
         stop     = <5>;
         scale    = <4>;
         scale-div = <675>;
@@ -83,7 +83,7 @@
         min-events = <20>;
         decel-samples = <6>;
         suppress-limit = <100>;
-        peak-decay = <1000>;
+        peak-decay = <995>;
         axis     = <0>;
         layer    = <5>;
         friction = <10>;
